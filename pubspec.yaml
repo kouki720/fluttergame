@@ -1,0 +1,69 @@
+name: eco_warrior_tunisia1
+description: Un jeu éducatif sur l'environnement en Tunisie
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Flame - Moteur de jeu 2D
+  flame: ^1.18.0
+  flame_audio: ^2.1.0
+
+  # UI et Navigation
+  cupertino_icons: ^1.0.2
+
+  # Gestion d'état
+  provider: ^6.1.1
+
+  # Stockage local pour la sauvegarde
+  shared_preferences: ^2.2.2
+
+  # Animations
+  flutter_animate: ^4.5.0
+
+  # Utilitaires
+  collection: ^1.18.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Assets du jeu
+  assets:
+    # Images - Joueur
+    - assets/images/
+    - assets/images/player/
+    - assets/images/enemies/
+    - assets/images/backgrounds/
+    - assets/images/ui/
+    - assets/images/stories/
+    - assets/images/objects/
+    - assets/images/collectibles/
+    - assets/images/powerups/
+
+    # Audio
+    - assets/audio/
+    - assets/audio/music/
+    - assets/audio/sfx/
+
+    # Data (JSON files)
+    - assets/data/
+
+  # Fonts personnalisées (optionnel)
+  # Décommentez si vous ajoutez des polices
+  # fonts:
+  #   - family: GameFont
+  #     fonts:
+  #       - asset: assets/fonts/game_font.ttf
+  #         weight: 400
+  #       - asset: assets/fonts/game_font_bold.ttf
+  #         weight: 700
