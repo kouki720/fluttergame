@@ -28,6 +28,8 @@ dependencies:
 
   # Utilitaires
   collection: ^1.18.0
+  animated_background: ^2.0.0  # Pour animations de particules
+  audioplayers: ^5.2.1
 
 dev_dependencies:
   flutter_test:

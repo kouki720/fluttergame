@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'main_menu_screen.dart';
+import '../widgets/animated_background_widget.dart'; // AJOUT
+import '../managers/audio_manager.dart'; // AJOUT
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -26,7 +28,7 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
 
-    // Animation de fade in
+    // Initialiser les contrôleurs d'animation
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -59,10 +61,15 @@ class _SplashScreenState extends State<SplashScreen>
       });
     });
 
+    // Démarrer le chargement
     _startLoading();
   }
 
   void _startLoading() async {
+    // Démarrer la musique du splash screen
+    AudioManager().playMusic('menu_music.mp3');
+
+    // Démarrer les animations
     _fadeController.forward();
 
     // Simuler le chargement des ressources
@@ -101,6 +108,9 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
+    // Arrêter la musique quand on quitte le splash screen
+    AudioManager().stopMusic();
+
     _fadeController.dispose();
     _scaleController.dispose();
     _progressController.dispose();
@@ -110,18 +120,12 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              const Color(0xFF1B5E20), // Vert foncé
-              const Color(0xFF2E7D32), // Vert moyen
-              const Color(0xFF4CAF50), // Vert clair
-            ],
-          ),
-        ),
+      body: AnimatedBackgroundWidget(
+        colors: const [
+          Color(0xFF1B5E20), // Vert foncé
+          Color(0xFF2E7D32), // Vert moyen
+          Color(0xFF4CAF50), // Vert clair
+        ],
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: Center(
@@ -228,6 +232,22 @@ class _SplashScreenState extends State<SplashScreen>
                     fontSize: 16,
                     color: Colors.white54,
                     fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(height: 50),
+
+                // Message environnemental (optionnel)
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 40),
+                  child: Text(
+                    '🌱 Ensemble, protégeons notre belle Tunisie ! 🌱',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white60,
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
                 ),
               ],

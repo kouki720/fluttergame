@@ -3,6 +3,8 @@ import '../widgets/menu_button.dart';
 import 'stage_selection_screen.dart';
 import 'settings_screen.dart';
 import 'credits_screen.dart';
+import '../widgets/animated_background_widget.dart'; // AJOUT
+import '../managers/audio_manager.dart'; // AJOUT
 
 class MainMenuScreen extends StatefulWidget {
   const MainMenuScreen({super.key});
@@ -20,6 +22,9 @@ class _MainMenuScreenState extends State<MainMenuScreen>
   @override
   void initState() {
     super.initState();
+
+    // Démarrer la musique du menu
+    AudioManager().playMusic('menu_music.mp3');
 
     // Contrôleur d'animation principal
     _animController = AnimationController(
@@ -54,22 +59,22 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     super.dispose();
   }
 
+  void _onButtonPressed(VoidCallback action) {
+    // Jouer le son du bouton
+    AudioManager().playSfx('button_click.mp3');
+    // Exécuter l'action
+    action();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        // Fond dégradé vert
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              const Color(0xFF1B5E20), // Vert foncé
-              const Color(0xFF2E7D32), // Vert moyen
-              const Color(0xFF4CAF50), // Vert clair
-            ],
-          ),
-        ),
+      body: AnimatedBackgroundWidget(
+        colors: const [
+          Color(0xFF1B5E20), // Vert foncé
+          Color(0xFF2E7D32), // Vert moyen
+          Color(0xFF4CAF50), // Vert clair
+        ],
         child: SafeArea(
           child: FadeTransition(
             opacity: _fadeAnimation,
@@ -154,12 +159,14 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                         icon: Icons.play_arrow_rounded,
                         label: 'NOUVELLE PARTIE',
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const StageSelectionScreen(),
-                            ),
-                          );
+                          _onButtonPressed(() {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const StageSelectionScreen(),
+                              ),
+                            );
+                          });
                         },
                       ),
 
@@ -170,14 +177,16 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                         icon: Icons.refresh_rounded,
                         label: 'CONTINUER',
                         onPressed: () {
-                          // TODO: Implémenter la sauvegarde plus tard
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Aucune sauvegarde trouvée'),
-                              duration: Duration(seconds: 2),
-                              backgroundColor: Color(0xFF2E7D32),
-                            ),
-                          );
+                          _onButtonPressed(() {
+                            // TODO: Implémenter la sauvegarde plus tard
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Aucune sauvegarde trouvée'),
+                                duration: Duration(seconds: 2),
+                                backgroundColor: Color(0xFF2E7D32),
+                              ),
+                            );
+                          });
                         },
                       ),
 
@@ -188,12 +197,14 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                         icon: Icons.settings_rounded,
                         label: 'PARAMÈTRES',
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const SettingsScreen(),
-                            ),
-                          );
+                          _onButtonPressed(() {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SettingsScreen(),
+                              ),
+                            );
+                          });
                         },
                       ),
 
@@ -204,12 +215,14 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                         icon: Icons.info_rounded,
                         label: 'CRÉDITS',
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const CreditsScreen(),
-                            ),
-                          );
+                          _onButtonPressed(() {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const CreditsScreen(),
+                              ),
+                            );
+                          });
                         },
                       ),
 
