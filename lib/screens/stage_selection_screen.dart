@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/stage_card.dart';
 import '../models/stage_data.dart';
+import '../managers/audio_manager.dart';
 
 class StageSelectionScreen extends StatefulWidget {
   const StageSelectionScreen({super.key});
@@ -116,6 +117,9 @@ class _StageSelectionScreenState extends State<StageSelectionScreen>
     // Débloquer les stages selon la progression
     _unlockStages();
 
+    // La musique menu continue automatiquement
+    // Pas besoin de changer la musique ici
+
     // Animation d'entrée
     _animController = AnimationController(
       duration: const Duration(milliseconds: 800),
@@ -185,7 +189,10 @@ class _StageSelectionScreenState extends State<StageSelectionScreen>
           // Bouton retour
           IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white, size: 32),
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              AudioManager().playSfx('button_click.mp3');
+              Navigator.pop(context);
+            },
           ),
 
           const SizedBox(width: 16),
@@ -264,6 +271,7 @@ class _StageSelectionScreenState extends State<StageSelectionScreen>
       stage: stage,
       delay: index * 100, // Animation décalée pour chaque carte
       onTap: () {
+        AudioManager().playSfx('button_click.mp3');
         if (stage.isUnlocked) {
           _onStageSelected(stage);
         } else {
@@ -274,22 +282,97 @@ class _StageSelectionScreenState extends State<StageSelectionScreen>
   }
 
   void _onStageSelected(StageData stage) {
+    // ICI on change la musique pour le gameplay
+    AudioManager().playMusic('gameplay_music.mp3');
+
     // Navigation vers l'écran d'histoire du stage
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Stage ${stage.stageNumber}'),
+        backgroundColor: const Color(0xFF1B5E20),
+        title: Row(
+          children: [
+            Icon(stage.icon, color: Colors.white),
+            const SizedBox(width: 8),
+            Text(
+              'Stage ${stage.stageNumber}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
         content: Text(
           '${stage.title}\n\n'
               '${stage.description}\n\n'
-              'Thème: ${stage.theme}\n'
-              'Difficulté: ${stage.difficulty}\n\n'
+              '📍 ${stage.location}\n'
+              '🎯 ${stage.theme}\n'
+              '⚡ Difficulté: ${stage.difficulty}\n\n'
+              '🎵 Musique de gameplay activée !\n\n'
               'L\'écran d\'histoire sera implémenté dans l\'étape suivante !',
+          style: const TextStyle(
+            color: Colors.white70,
+          ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            onPressed: () {
+              AudioManager().playSfx('button_click.mp3');
+              Navigator.pop(context);
+            },
+            child: const Text(
+              'Annuler',
+              style: TextStyle(color: Colors.white60),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              AudioManager().playSfx('stage_complete.mp3');
+              Navigator.pop(context);
+              // TODO: Naviguer vers l'écran d'histoire
+              _showComingSoonDialog();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4CAF50),
+            ),
+            child: const Text('Commencer l\'aventure'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showComingSoonDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1B5E20),
+        title: const Row(
+          children: [
+            Icon(Icons.construction, color: Colors.orange),
+            SizedBox(width: 8),
+            Text(
+              'Fonctionnalité à venir',
+              style: TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+        content: const Text(
+          'L\'écran d\'histoire (comic/manga) et le gameplay 2D avec Flame seront implémentés dans les prochaines étapes !\n\n'
+              'Pour l\'instant, la musique de gameplay est activée et le système de progression est en place.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              AudioManager().playSfx('button_click.mp3');
+              Navigator.pop(context);
+            },
+            child: const Text(
+              'Compris',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -300,21 +383,32 @@ class _StageSelectionScreenState extends State<StageSelectionScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1B5E20),
         title: const Row(
           children: [
             Icon(Icons.lock, color: Colors.orange),
             SizedBox(width: 8),
-            Text('Stage Verrouillé'),
+            Text(
+              'Stage Verrouillé',
+              style: TextStyle(color: Colors.white),
+            ),
           ],
         ),
         content: Text(
           'Le stage ${stage.stageNumber} : "${stage.title}" est verrouillé.\n\n'
               'Complète le stage ${stage.stageNumber - 1} pour débloquer ce stage !',
+          style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Compris'),
+            onPressed: () {
+              AudioManager().playSfx('button_click.mp3');
+              Navigator.pop(context);
+            },
+            child: const Text(
+              'Compris',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),

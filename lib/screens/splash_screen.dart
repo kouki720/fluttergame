@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'main_menu_screen.dart';
-import '../widgets/animated_background_widget.dart'; // AJOUT
-import '../managers/audio_manager.dart'; // AJOUT
+import '../widgets/animated_background_widget.dart';
+import '../managers/audio_manager.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -23,6 +23,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   double _loadingProgress = 0.0;
   String _loadingText = 'Chargement...';
+  bool _isLoadingComplete = false;
 
   @override
   void initState() {
@@ -66,7 +67,7 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _startLoading() async {
-    // Démarrer la musique du splash screen
+    // Démarrer la musique du menu (elle continuera après le splash)
     AudioManager().playMusic('menu_music.mp3');
 
     // Démarrer les animations
@@ -79,18 +80,29 @@ class _SplashScreenState extends State<SplashScreen>
     // Attendre la fin du chargement
     await Future.delayed(const Duration(milliseconds: 3500));
 
-    // Navigation vers le menu principal
     if (mounted) {
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-          const MainMenuScreen(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 800),
-        ),
-      );
+      setState(() {
+        _isLoadingComplete = true;
+      });
+
+      // Navigation vers le menu principal
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+            const MainMenuScreen(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 800),
+          ),
+        );
+      }
     }
   }
 
@@ -108,8 +120,8 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
-    // Arrêter la musique quand on quitte le splash screen
-    AudioManager().stopMusic();
+    // IMPORTANT: NE PAS arrêter la musique ici !
+    // Elle doit continuer dans le menu principal
 
     _fadeController.dispose();
     _scaleController.dispose();
@@ -160,52 +172,64 @@ class _SplashScreenState extends State<SplashScreen>
                 const SizedBox(height: 40),
 
                 // Titre du jeu
-                const Text(
-                  'ECO WARRIOR',
-                  style: TextStyle(
-                    fontSize: 52,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 6,
-                    shadows: [
-                      Shadow(
-                        blurRadius: 15,
-                        color: Colors.black45,
-                        offset: Offset(3, 3),
-                      ),
-                    ],
+                AnimatedOpacity(
+                  opacity: _loadingProgress > 0.2 ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 500),
+                  child: const Text(
+                    'ECO WARRIOR',
+                    style: TextStyle(
+                      fontSize: 52,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 6,
+                      shadows: [
+                        Shadow(
+                          blurRadius: 15,
+                          color: Colors.black45,
+                          offset: Offset(3, 3),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
 
                 const SizedBox(height: 8),
 
-                const Text(
-                  'TUNISIA',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.white70,
-                    letterSpacing: 4,
+                AnimatedOpacity(
+                  opacity: _loadingProgress > 0.3 ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 500),
+                  child: const Text(
+                    'TUNISIA',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.white70,
+                      letterSpacing: 4,
+                    ),
                   ),
                 ),
 
                 const SizedBox(height: 80),
 
                 // Barre de progression
-                Container(
-                  width: 300,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: LinearProgressIndicator(
-                      value: _loadingProgress,
-                      backgroundColor: Colors.transparent,
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        Colors.white,
+                AnimatedOpacity(
+                  opacity: _loadingProgress > 0.1 ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 300),
+                  child: Container(
+                    width: 300,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: LinearProgressIndicator(
+                        value: _loadingProgress,
+                        backgroundColor: Colors.transparent,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          _isLoadingComplete ? Colors.green : Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -214,42 +238,72 @@ class _SplashScreenState extends State<SplashScreen>
                 const SizedBox(height: 20),
 
                 // Texte de chargement
-                Text(
-                  _loadingText,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    color: Colors.white70,
-                    letterSpacing: 1,
+                AnimatedOpacity(
+                  opacity: _loadingProgress > 0.1 ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 300),
+                  child: Text(
+                    _loadingText,
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: _isLoadingComplete ? Colors.green : Colors.white70,
+                      letterSpacing: 1,
+                      fontWeight: _isLoadingComplete ? FontWeight.bold : FontWeight.normal,
+                    ),
                   ),
                 ),
 
                 const SizedBox(height: 10),
 
                 // Pourcentage
-                Text(
-                  '${(_loadingProgress * 100).toInt()}%',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.white54,
-                    fontWeight: FontWeight.bold,
+                AnimatedOpacity(
+                  opacity: _loadingProgress > 0.1 ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 300),
+                  child: Text(
+                    '${(_loadingProgress * 100).toInt()}%',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: _isLoadingComplete ? Colors.green : Colors.white54,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
 
                 const SizedBox(height: 50),
 
-                // Message environnemental (optionnel)
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 40),
-                  child: Text(
-                    '🌱 Ensemble, protégeons notre belle Tunisie ! 🌱',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white60,
-                      fontStyle: FontStyle.italic,
+                // Message environnemental
+                AnimatedOpacity(
+                  opacity: _loadingProgress > 0.5 ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 500),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 40),
+                    child: Text(
+                      '🌱 Ensemble, protégeons notre belle Tunisie ! 🌱',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white60,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
                   ),
                 ),
+
+                // Indicateur de chargement complet
+                if (_isLoadingComplete) ...[
+                  const SizedBox(height: 30),
+                  const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                    strokeWidth: 2,
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Redirection...',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.green,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

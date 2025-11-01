@@ -3,8 +3,8 @@ import '../widgets/menu_button.dart';
 import 'stage_selection_screen.dart';
 import 'settings_screen.dart';
 import 'credits_screen.dart';
-import '../widgets/animated_background_widget.dart'; // AJOUT
-import '../managers/audio_manager.dart'; // AJOUT
+import '../widgets/animated_background_widget.dart';
+import '../managers/audio_manager.dart';
 
 class MainMenuScreen extends StatefulWidget {
   const MainMenuScreen({super.key});
@@ -23,8 +23,10 @@ class _MainMenuScreenState extends State<MainMenuScreen>
   void initState() {
     super.initState();
 
-    // Démarrer la musique du menu
-    AudioManager().playMusic('menu_music.mp3');
+    // Si pas déjà en cours, jouer la musique menu
+    if (AudioManager().currentMusic != 'menu_music.mp3') {
+      AudioManager().playMusic('menu_music.mp3');
+    }
 
     // Contrôleur d'animation principal
     _animController = AnimationController(
