@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import '../utils/responsive_helper.dart';
 
 class CreditsScreen extends StatefulWidget {
   const CreditsScreen({super.key});
@@ -17,7 +18,7 @@ class _CreditsScreenState extends State<CreditsScreen>
   void initState() {
     super.initState();
 
-    // Animation de défilement automatique (comme un générique de film)
+    // Animation de défilement automatique
     _scrollController = AnimationController(
       duration: const Duration(seconds: 30),
       vsync: this,
@@ -43,6 +44,9 @@ class _CreditsScreenState extends State<CreditsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isSmallScreen = ResponsiveHelper.isSmallScreen(context);
+    final isPortrait = ResponsiveHelper.isPortrait(context);
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -74,7 +78,7 @@ class _CreditsScreenState extends State<CreditsScreen>
                       child: child,
                     );
                   },
-                  child: _buildCreditsContent(),
+                  child: _buildCreditsContent(isSmallScreen),
                 ),
               ),
             ],
@@ -85,34 +89,40 @@ class _CreditsScreenState extends State<CreditsScreen>
   }
 
   Widget _buildHeader(BuildContext context) {
+    final isSmallScreen = ResponsiveHelper.isSmallScreen(context);
+
     return Container(
-      padding: const EdgeInsets.all(16.0),
+      padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
       child: Row(
         children: [
           // Bouton retour
           IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white, size: 32),
+            icon: Icon(Icons.arrow_back,
+                color: Colors.white,
+                size: isSmallScreen ? 28 : 32),
             onPressed: () => Navigator.pop(context),
           ),
 
-          const SizedBox(width: 16),
+          SizedBox(width: isSmallScreen ? 12 : 16),
 
           // Titre
-          const Text(
+          Text(
             'CRÉDITS',
             style: TextStyle(
-              fontSize: 32,
+              fontSize: isSmallScreen ? 24 : 32,
               fontWeight: FontWeight.bold,
               color: Colors.white,
-              letterSpacing: 2,
+              letterSpacing: isSmallScreen ? 1 : 2,
             ),
           ),
 
-          const Spacer(),
+          Spacer(),
 
           // Bouton pour redémarrer l'animation
           IconButton(
-            icon: const Icon(Icons.replay, color: Colors.white, size: 28),
+            icon: Icon(Icons.replay,
+                color: Colors.white,
+                size: isSmallScreen ? 24 : 28),
             onPressed: () {
               _scrollController.reset();
               _scrollController.forward();
@@ -123,17 +133,20 @@ class _CreditsScreenState extends State<CreditsScreen>
     );
   }
 
-  Widget _buildCreditsContent() {
+  Widget _buildCreditsContent(bool isSmallScreen) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+      padding: EdgeInsets.symmetric(
+          horizontal: isSmallScreen ? 20 : 40,
+          vertical: isSmallScreen ? 16 : 20
+      ),
       child: Column(
         children: [
-          const SizedBox(height: 40),
+          SizedBox(height: isSmallScreen ? 30 : 40),
 
           // Logo principal
-          _buildAnimatedLogo(),
+          _buildAnimatedLogo(isSmallScreen),
 
-          const SizedBox(height: 60),
+          SizedBox(height: isSmallScreen ? 40 : 60),
 
           // Titre du jeu
           _buildSection(
@@ -142,11 +155,12 @@ class _CreditsScreenState extends State<CreditsScreen>
               'Un Jeu Éducatif sur l\'Environnement',
               'Protégeons Notre Planète 🌍',
             ],
-            fontSize: 28,
+            fontSize: isSmallScreen ? 20 : 28,
+            isSmallScreen: isSmallScreen,
             isBold: true,
           ),
 
-          const SizedBox(height: 80),
+          SizedBox(height: isSmallScreen ? 60 : 80),
 
           // Développement
           _buildSection(
@@ -158,9 +172,10 @@ class _CreditsScreenState extends State<CreditsScreen>
               'Moteur de Jeu',
               'Flutter & Flame Engine',
             ],
+            isSmallScreen: isSmallScreen,
           ),
 
-          const SizedBox(height: 60),
+          SizedBox(height: isSmallScreen ? 40 : 60),
 
           // Design
           _buildSection(
@@ -175,9 +190,10 @@ class _CreditsScreenState extends State<CreditsScreen>
               'Animations',
               'À définir',
             ],
+            isSmallScreen: isSmallScreen,
           ),
 
-          const SizedBox(height: 60),
+          SizedBox(height: isSmallScreen ? 40 : 60),
 
           // Contenu éducatif
           _buildSection(
@@ -192,9 +208,10 @@ class _CreditsScreenState extends State<CreditsScreen>
               'Conseiller Pédagogique',
               'À définir',
             ],
+            isSmallScreen: isSmallScreen,
           ),
 
-          const SizedBox(height: 60),
+          SizedBox(height: isSmallScreen ? 40 : 60),
 
           // Audio
           _buildSection(
@@ -209,9 +226,10 @@ class _CreditsScreenState extends State<CreditsScreen>
               'Conception Sonore',
               'À définir',
             ],
+            isSmallScreen: isSmallScreen,
           ),
 
-          const SizedBox(height: 60),
+          SizedBox(height: isSmallScreen ? 40 : 60),
 
           // Remerciements spéciaux
           _buildSection(
@@ -226,9 +244,10 @@ class _CreditsScreenState extends State<CreditsScreen>
               'Parc National Ichkeul',
               'Ministère de l\'Environnement',
             ],
+            isSmallScreen: isSmallScreen,
           ),
 
-          const SizedBox(height: 60),
+          SizedBox(height: isSmallScreen ? 40 : 60),
 
           // Technologies utilisées
           _buildSection(
@@ -243,9 +262,10 @@ class _CreditsScreenState extends State<CreditsScreen>
               'Shared Preferences - Sauvegarde',
               'Flutter Animate - Animations',
             ],
+            isSmallScreen: isSmallScreen,
           ),
 
-          const SizedBox(height: 60),
+          SizedBox(height: isSmallScreen ? 40 : 60),
 
           // Localisation
           _buildSection(
@@ -257,13 +277,14 @@ class _CreditsScreenState extends State<CreditsScreen>
               'de la Tunisie et son patrimoine',
               'environnemental unique',
             ],
+            isSmallScreen: isSmallScreen,
           ),
 
-          const SizedBox(height: 80),
+          SizedBox(height: isSmallScreen ? 60 : 80),
 
           // Message environnemental
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
@@ -274,30 +295,30 @@ class _CreditsScreenState extends State<CreditsScreen>
             ),
             child: Column(
               children: [
-                const Icon(
+                Icon(
                   Icons.eco,
-                  size: 60,
+                  size: isSmallScreen ? 40 : 60,
                   color: Colors.white,
                 ),
-                const SizedBox(height: 20),
-                const Text(
+                SizedBox(height: isSmallScreen ? 16 : 20),
+                Text(
                   'NOTRE MISSION',
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: isSmallScreen ? 18 : 24,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
-                    letterSpacing: 2,
+                    letterSpacing: isSmallScreen ? 1 : 2,
                   ),
                 ),
-                const SizedBox(height: 16),
-                const Text(
+                SizedBox(height: isSmallScreen ? 12 : 16),
+                Text(
                   'Sensibiliser les jeunes générations\n'
                       'à la protection de l\'environnement\n'
                       'et aux défis écologiques\n'
                       'de la Tunisie moderne.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: isSmallScreen ? 12 : 16,
                     color: Colors.white70,
                     height: 1.5,
                   ),
@@ -306,7 +327,7 @@ class _CreditsScreenState extends State<CreditsScreen>
             ),
           ),
 
-          const SizedBox(height: 80),
+          SizedBox(height: isSmallScreen ? 60 : 80),
 
           // Copyright
           _buildSection(
@@ -319,24 +340,25 @@ class _CreditsScreenState extends State<CreditsScreen>
               '',
               'Fait avec ❤️ en Tunisie',
             ],
-            fontSize: 14,
+            fontSize: isSmallScreen ? 12 : 14,
+            isSmallScreen: isSmallScreen,
           ),
 
-          const SizedBox(height: 60),
+          SizedBox(height: isSmallScreen ? 40 : 60),
 
           // Message final
-          const Text(
+          Text(
             '🌱 Ensemble, protégeons notre planète ! 🌱',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 20,
+              fontSize: isSmallScreen ? 16 : 20,
               color: Colors.white,
               fontWeight: FontWeight.bold,
               fontStyle: FontStyle.italic,
             ),
           ),
 
-          const SizedBox(height: 100),
+          SizedBox(height: isSmallScreen ? 80 : 100),
         ],
       ),
     );
@@ -345,6 +367,7 @@ class _CreditsScreenState extends State<CreditsScreen>
   Widget _buildSection({
     required String title,
     required List<String> content,
+    required bool isSmallScreen,
     double fontSize = 16,
     bool isBold = false,
   }) {
@@ -355,10 +378,10 @@ class _CreditsScreenState extends State<CreditsScreen>
           title,
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: fontSize + 6,
+            fontSize: fontSize + (isSmallScreen ? 4 : 6),
             fontWeight: FontWeight.bold,
             color: Colors.white,
-            letterSpacing: 2,
+            letterSpacing: isSmallScreen ? 1 : 2,
             shadows: const [
               Shadow(
                 blurRadius: 10,
@@ -369,7 +392,7 @@ class _CreditsScreenState extends State<CreditsScreen>
           ),
         ),
 
-        const SizedBox(height: 20),
+        SizedBox(height: isSmallScreen ? 16 : 20),
 
         // Contenu
         ...content.map((line) => Padding(
@@ -378,7 +401,7 @@ class _CreditsScreenState extends State<CreditsScreen>
             line,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: fontSize,
+              fontSize: isSmallScreen ? fontSize - 2 : fontSize,
               color: line.isEmpty ? Colors.transparent : Colors.white70,
               fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
               height: 1.4,
@@ -389,7 +412,7 @@ class _CreditsScreenState extends State<CreditsScreen>
     );
   }
 
-  Widget _buildAnimatedLogo() {
+  Widget _buildAnimatedLogo(bool isSmallScreen) {
     return TweenAnimationBuilder<double>(
       duration: const Duration(seconds: 3),
       tween: Tween(begin: 0.0, end: 2 * math.pi),
@@ -397,8 +420,8 @@ class _CreditsScreenState extends State<CreditsScreen>
         return Transform.rotate(
           angle: angle,
           child: Container(
-            width: 150,
-            height: 150,
+            width: isSmallScreen ? 100 : 150,
+            height: isSmallScreen ? 100 : 150,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white.withOpacity(0.2),
@@ -410,9 +433,9 @@ class _CreditsScreenState extends State<CreditsScreen>
                 ),
               ],
             ),
-            child: const Icon(
+            child: Icon(
               Icons.eco,
-              size: 80,
+              size: isSmallScreen ? 50 : 80,
               color: Colors.white,
             ),
           ),

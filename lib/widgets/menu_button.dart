@@ -7,6 +7,7 @@ class MenuButton extends StatefulWidget {
   final Color? backgroundColor;
   final Color? foregroundColor;
   final double width;
+  final double height; // NOUVEAU PARAMÈTRE
 
   const MenuButton({
     super.key,
@@ -16,6 +17,7 @@ class MenuButton extends StatefulWidget {
     this.backgroundColor,
     this.foregroundColor,
     this.width = 320,
+    this.height = 70, // VALEUR PAR DÉFAUT
   });
 
   @override
@@ -48,6 +50,11 @@ class _MenuButtonState extends State<MenuButton>
 
   @override
   Widget build(BuildContext context) {
+    // Calcul des tailles responsives basées sur la hauteur
+    final iconSize = widget.height * 0.45; // 45% de la hauteur du bouton
+    final textSize = widget.height * 0.3;   // 30% de la hauteur du bouton
+    final iconSpacing = widget.height * 0.2; // 20% de la hauteur du bouton
+
     return GestureDetector(
       onTapDown: (_) {
         setState(() => _isPressed = true);
@@ -66,7 +73,7 @@ class _MenuButtonState extends State<MenuButton>
         scale: _scaleAnimation,
         child: Container(
           width: widget.width,
-          height: 70,
+          height: widget.height, // UTILISATION DE LA HAUTEUR
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -90,14 +97,14 @@ class _MenuButtonState extends State<MenuButton>
             children: [
               Icon(
                 widget.icon,
-                size: 32,
+                size: iconSize, // TAILLE DYNAMIQUE
                 color: widget.foregroundColor ?? const Color(0xFF1B5E20),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: iconSpacing), // ESPACEMENT DYNAMIQUE
               Text(
                 widget.label,
                 style: TextStyle(
-                  fontSize: 22,
+                  fontSize: textSize, // TAILLE DE TEXTE DYNAMIQUE
                   fontWeight: FontWeight.bold,
                   color: widget.foregroundColor ?? const Color(0xFF1B5E20),
                   letterSpacing: 1.5,

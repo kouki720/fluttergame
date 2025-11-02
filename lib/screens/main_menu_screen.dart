@@ -5,6 +5,7 @@ import 'settings_screen.dart';
 import 'credits_screen.dart';
 import '../widgets/animated_background_widget.dart';
 import '../managers/audio_manager.dart';
+import '../utils/responsive_helper.dart';
 
 class MainMenuScreen extends StatefulWidget {
   const MainMenuScreen({super.key});
@@ -23,10 +24,8 @@ class _MainMenuScreenState extends State<MainMenuScreen>
   void initState() {
     super.initState();
 
-    // Si pas déjà en cours, jouer la musique menu
-    if (AudioManager().currentMusic != 'menu_music.mp3') {
-      AudioManager().playMusic('menu_music.mp3');
-    }
+    // Démarrer la musique du menu
+    AudioManager().playMusic('menu_music.mp3');
 
     // Contrôleur d'animation principal
     _animController = AnimationController(
@@ -70,6 +69,9 @@ class _MainMenuScreenState extends State<MainMenuScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isSmallScreen = ResponsiveHelper.isSmallScreen(context);
+    final isPortrait = ResponsiveHelper.isPortrait(context);
+
     return Scaffold(
       body: AnimatedBackgroundWidget(
         colors: const [
@@ -87,12 +89,12 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const SizedBox(height: 20),
+                      SizedBox(height: isSmallScreen ? 10 : 20),
 
                       // Logo du jeu avec cercle
                       Container(
-                        width: 120,
-                        height: 120,
+                        width: isSmallScreen ? 80 : 120,
+                        height: isSmallScreen ? 80 : 120,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: Colors.white.withOpacity(0.2),
@@ -104,24 +106,24 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                             ),
                           ],
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.eco,
-                          size: 70,
+                          size: isSmallScreen ? 40 : 70,
                           color: Colors.white,
                         ),
                       ),
 
-                      const SizedBox(height: 30),
+                      SizedBox(height: isSmallScreen ? 20 : 30),
 
                       // Titre principal
-                      const Text(
+                      Text(
                         'ECO WARRIOR',
                         style: TextStyle(
-                          fontSize: 56,
+                          fontSize: isSmallScreen ? 36 : 56,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
-                          letterSpacing: 5,
-                          shadows: [
+                          letterSpacing: isSmallScreen ? 3 : 5,
+                          shadows: const [
                             Shadow(
                               blurRadius: 15,
                               color: Colors.black45,
@@ -132,34 +134,36 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                       ),
 
                       // Sous-titre
-                      const Text(
+                      Text(
                         'TUNISIA',
                         style: TextStyle(
-                          fontSize: 36,
+                          fontSize: isSmallScreen ? 24 : 36,
                           fontWeight: FontWeight.w400,
                           color: Colors.white70,
-                          letterSpacing: 3,
+                          letterSpacing: isSmallScreen ? 2 : 3,
                         ),
                       ),
 
-                      const SizedBox(height: 10),
+                      SizedBox(height: isSmallScreen ? 8 : 10),
 
                       // Slogan
-                      const Text(
+                      Text(
                         '🌍 Protégeons notre environnement 🌍',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: isSmallScreen ? 12 : 16,
                           color: Colors.white60,
                           fontStyle: FontStyle.italic,
                         ),
                       ),
 
-                      const SizedBox(height: 50),
+                      SizedBox(height: isSmallScreen ? 30 : 50),
 
                       // Bouton: Nouvelle Partie
                       MenuButton(
                         icon: Icons.play_arrow_rounded,
                         label: 'NOUVELLE PARTIE',
+                        width: isSmallScreen ? 260 : 320,
+                        height: isSmallScreen ? 60 : 70,
                         onPressed: () {
                           _onButtonPressed(() {
                             Navigator.push(
@@ -172,12 +176,14 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                         },
                       ),
 
-                      const SizedBox(height: 20),
+                      SizedBox(height: isSmallScreen ? 16 : 20),
 
                       // Bouton: Continuer
                       MenuButton(
                         icon: Icons.refresh_rounded,
                         label: 'CONTINUER',
+                        width: isSmallScreen ? 260 : 320,
+                        height: isSmallScreen ? 60 : 70,
                         onPressed: () {
                           _onButtonPressed(() {
                             // TODO: Implémenter la sauvegarde plus tard
@@ -192,12 +198,14 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                         },
                       ),
 
-                      const SizedBox(height: 20),
+                      SizedBox(height: isSmallScreen ? 16 : 20),
 
                       // Bouton: Paramètres
                       MenuButton(
                         icon: Icons.settings_rounded,
                         label: 'PARAMÈTRES',
+                        width: isSmallScreen ? 260 : 320,
+                        height: isSmallScreen ? 60 : 70,
                         onPressed: () {
                           _onButtonPressed(() {
                             Navigator.push(
@@ -210,12 +218,14 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                         },
                       ),
 
-                      const SizedBox(height: 20),
+                      SizedBox(height: isSmallScreen ? 16 : 20),
 
                       // Bouton: Crédits
                       MenuButton(
                         icon: Icons.info_rounded,
                         label: 'CRÉDITS',
+                        width: isSmallScreen ? 260 : 320,
+                        height: isSmallScreen ? 60 : 70,
                         onPressed: () {
                           _onButtonPressed(() {
                             Navigator.push(
@@ -228,19 +238,19 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                         },
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: isSmallScreen ? 30 : 40),
 
                       // Numéro de version
-                      const Text(
+                      Text(
                         'Version 1.0.0',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: isSmallScreen ? 10 : 12,
                           color: Colors.white38,
-                          letterSpacing: 1,
+                          letterSpacing: isSmallScreen ? 0.5 : 1,
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                      SizedBox(height: isSmallScreen ? 10 : 20),
                     ],
                   ),
                 ),

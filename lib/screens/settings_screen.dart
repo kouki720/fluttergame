@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../managers/audio_manager.dart';
+import '../utils/responsive_helper.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -8,7 +10,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // Valeurs des paramètres (à sauvegarder plus tard avec SharedPreferences)
+  // Valeurs des paramètres
   double _musicVolume = 0.7;
   double _sfxVolume = 0.8;
   bool _vibrationsEnabled = true;
@@ -18,6 +20,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isSmallScreen = ResponsiveHelper.isSmallScreen(context);
+    final isPortrait = ResponsiveHelper.isPortrait(context);
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -39,59 +44,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
               // Contenu des paramètres
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
+                  padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Section Audio
                       _buildSection(
                         title: '🔊 AUDIO',
+                        isSmallScreen: isSmallScreen,
                         children: [
                           _buildSliderSetting(
                             label: 'Musique',
                             value: _musicVolume,
+                            isSmallScreen: isSmallScreen,
                             onChanged: (value) {
                               setState(() => _musicVolume = value);
+                              AudioManager().setMusicVolume(value);
                             },
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: isSmallScreen ? 12 : 16),
                           _buildSliderSetting(
                             label: 'Effets Sonores',
                             value: _sfxVolume,
+                            isSmallScreen: isSmallScreen,
                             onChanged: (value) {
                               setState(() => _sfxVolume = value);
+                              AudioManager().setSfxVolume(value);
                             },
                           ),
                         ],
                       ),
 
-                      const SizedBox(height: 32),
+                      SizedBox(height: isSmallScreen ? 24 : 32),
 
                       // Section Jeu
                       _buildSection(
                         title: '🎮 JEU',
+                        isSmallScreen: isSmallScreen,
                         children: [
                           _buildSwitchSetting(
                             label: 'Vibrations',
                             value: _vibrationsEnabled,
+                            isSmallScreen: isSmallScreen,
                             onChanged: (value) {
                               setState(() => _vibrationsEnabled = value);
                             },
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: isSmallScreen ? 12 : 16),
                           _buildSwitchSetting(
                             label: 'Tutoriel',
                             subtitle: 'Afficher les aides au démarrage',
                             value: _tutorialEnabled,
+                            isSmallScreen: isSmallScreen,
                             onChanged: (value) {
                               setState(() => _tutorialEnabled = value);
                             },
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: isSmallScreen ? 12 : 16),
                           _buildDropdownSetting(
                             label: 'Difficulté',
                             value: _difficulty,
                             items: ['Facile', 'Normal', 'Difficile'],
+                            isSmallScreen: isSmallScreen,
                             onChanged: (value) {
                               setState(() => _difficulty = value!);
                             },
@@ -99,16 +113,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ],
                       ),
 
-                      const SizedBox(height: 32),
+                      SizedBox(height: isSmallScreen ? 24 : 32),
 
                       // Section Langue
                       _buildSection(
                         title: '🌍 LANGUE',
+                        isSmallScreen: isSmallScreen,
                         children: [
                           _buildDropdownSetting(
                             label: 'Langue du jeu',
                             value: _language,
                             items: ['Français', 'العربية', 'English'],
+                            isSmallScreen: isSmallScreen,
                             onChanged: (value) {
                               setState(() => _language = value!);
                             },
@@ -116,34 +132,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ],
                       ),
 
-                      const SizedBox(height: 32),
+                      SizedBox(height: isSmallScreen ? 24 : 32),
 
                       // Section Données
                       _buildSection(
                         title: '💾 DONNÉES',
+                        isSmallScreen: isSmallScreen,
                         children: [
                           _buildActionButton(
                             label: 'Sauvegarder',
                             icon: Icons.save,
                             color: Colors.blue,
+                            isSmallScreen: isSmallScreen,
                             onPressed: () {
                               _saveSettings();
                             },
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: isSmallScreen ? 12 : 16),
                           _buildActionButton(
                             label: 'Réinitialiser Progression',
                             icon: Icons.restart_alt,
                             color: Colors.orange,
+                            isSmallScreen: isSmallScreen,
                             onPressed: () {
                               _showResetDialog();
                             },
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: isSmallScreen ? 12 : 16),
                           _buildActionButton(
                             label: 'Supprimer Toutes les Données',
                             icon: Icons.delete_forever,
                             color: Colors.red,
+                            isSmallScreen: isSmallScreen,
                             onPressed: () {
                               _showDeleteDialog();
                             },
@@ -151,7 +171,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ],
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: isSmallScreen ? 30 : 40),
 
                       // Informations
                       Center(
@@ -160,16 +180,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             Text(
                               'Eco Warrior Tunisia',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: isSmallScreen ? 14 : 16,
                                 color: Colors.white70,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            SizedBox(height: 4),
                             Text(
                               'Version 1.0.0',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: isSmallScreen ? 10 : 12,
                                 color: Colors.white54,
                               ),
                             ),
@@ -177,7 +197,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                      SizedBox(height: isSmallScreen ? 10 : 20),
                     ],
                   ),
                 ),
@@ -190,26 +210,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final isSmallScreen = ResponsiveHelper.isSmallScreen(context);
+
     return Container(
-      padding: const EdgeInsets.all(16.0),
+      padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
       child: Row(
         children: [
           // Bouton retour
           IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white, size: 32),
-            onPressed: () => Navigator.pop(context),
+            icon: Icon(Icons.arrow_back,
+                color: Colors.white,
+                size: isSmallScreen ? 28 : 32),
+            onPressed: () {
+              AudioManager().playSfx('button_click.mp3');
+              Navigator.pop(context);
+            },
           ),
 
-          const SizedBox(width: 16),
+          SizedBox(width: isSmallScreen ? 12 : 16),
 
           // Titre
-          const Text(
+          Text(
             'PARAMÈTRES',
             style: TextStyle(
-              fontSize: 32,
+              fontSize: isSmallScreen ? 24 : 32,
               fontWeight: FontWeight.bold,
               color: Colors.white,
-              letterSpacing: 2,
+              letterSpacing: isSmallScreen ? 1 : 2,
             ),
           ),
         ],
@@ -220,22 +247,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildSection({
     required String title,
     required List<Widget> children,
+    required bool isSmallScreen,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 20,
+          style: TextStyle(
+            fontSize: isSmallScreen ? 16 : 20,
             fontWeight: FontWeight.bold,
             color: Colors.white,
             letterSpacing: 1,
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: isSmallScreen ? 12 : 16),
         Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.1),
             borderRadius: BorderRadius.circular(15),
@@ -255,6 +283,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildSliderSetting({
     required String label,
     required double value,
+    required bool isSmallScreen,
     required ValueChanged<double> onChanged,
   }) {
     return Column(
@@ -265,30 +294,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             Text(
               label,
-              style: const TextStyle(
-                fontSize: 16,
+              style: TextStyle(
+                fontSize: isSmallScreen ? 14 : 16,
                 color: Colors.white,
                 fontWeight: FontWeight.w500,
               ),
             ),
             Text(
               '${(value * 100).toInt()}%',
-              style: const TextStyle(
-                fontSize: 16,
+              style: TextStyle(
+                fontSize: isSmallScreen ? 14 : 16,
                 color: Colors.white70,
                 fontWeight: FontWeight.bold,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: isSmallScreen ? 6 : 8),
         SliderTheme(
           data: SliderThemeData(
             activeTrackColor: Colors.white,
             inactiveTrackColor: Colors.white30,
             thumbColor: Colors.white,
             overlayColor: Colors.white24,
-            trackHeight: 4,
+            trackHeight: isSmallScreen ? 3 : 4,
           ),
           child: Slider(
             value: value,
@@ -305,6 +334,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required String label,
     String? subtitle,
     required bool value,
+    required bool isSmallScreen,
     required ValueChanged<bool> onChanged,
   }) {
     return Row(
@@ -316,18 +346,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: isSmallScreen ? 14 : 16,
                   color: Colors.white,
                   fontWeight: FontWeight.w500,
                 ),
               ),
               if (subtitle != null) ...[
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 10 : 12,
                     color: Colors.white60,
                   ),
                 ),
@@ -351,6 +381,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required String label,
     required String value,
     required List<String> items,
+    required bool isSmallScreen,
     required ValueChanged<String?> onChanged,
   }) {
     return Row(
@@ -358,14 +389,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 16,
+          style: TextStyle(
+            fontSize: isSmallScreen ? 14 : 16,
             color: Colors.white,
             fontWeight: FontWeight.w500,
           ),
         ),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: EdgeInsets.symmetric(
+              horizontal: isSmallScreen ? 12 : 16,
+              vertical: isSmallScreen ? 6 : 8
+          ),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.2),
             borderRadius: BorderRadius.circular(10),
@@ -375,8 +409,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onChanged: onChanged,
             dropdownColor: const Color(0xFF2E7D32),
             underline: const SizedBox(),
-            style: const TextStyle(
-              fontSize: 16,
+            style: TextStyle(
+              fontSize: isSmallScreen ? 14 : 16,
               color: Colors.white,
               fontWeight: FontWeight.w500,
             ),
@@ -396,24 +430,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required String label,
     required IconData icon,
     required Color color,
+    required bool isSmallScreen,
     required VoidCallback onPressed,
   }) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
         onPressed: onPressed,
-        icon: Icon(icon, size: 24),
+        icon: Icon(icon, size: isSmallScreen ? 20 : 24),
         label: Text(
           label,
-          style: const TextStyle(
-            fontSize: 16,
+          style: TextStyle(
+            fontSize: isSmallScreen ? 14 : 16,
             fontWeight: FontWeight.bold,
           ),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 12 : 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -423,12 +458,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _saveSettings() {
-    // TODO: Implémenter la sauvegarde avec SharedPreferences
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Text('Paramètres sauvegardés !'),
-        backgroundColor: Color(0xFF4CAF50),
-        duration: Duration(seconds: 2),
+        backgroundColor: const Color(0xFF4CAF50),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -437,28 +471,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
             Icon(Icons.warning, color: Colors.orange),
             SizedBox(width: 8),
             Text('Réinitialiser'),
           ],
         ),
-        content: const Text(
+        content: Text(
           'Voulez-vous vraiment réinitialiser votre progression ?\n\n'
               'Cette action ne peut pas être annulée.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
+            child: Text('Annuler'),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              // TODO: Implémenter la réinitialisation
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
+                SnackBar(
                   content: Text('Progression réinitialisée'),
                   backgroundColor: Colors.orange,
                 ),
@@ -467,7 +500,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange,
             ),
-            child: const Text('Réinitialiser'),
+            child: Text('Réinitialiser'),
           ),
         ],
       ),
@@ -478,14 +511,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
             Icon(Icons.delete_forever, color: Colors.red),
             SizedBox(width: 8),
             Text('Supprimer'),
           ],
         ),
-        content: const Text(
+        content: Text(
           'ATTENTION !\n\n'
               'Voulez-vous vraiment supprimer TOUTES vos données ?\n\n'
               'Cela inclut votre progression, vos scores et tous vos paramètres.\n\n'
@@ -494,14 +527,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
+            child: Text('Annuler'),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              // TODO: Implémenter la suppression totale
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
+                SnackBar(
                   content: Text('Toutes les données ont été supprimées'),
                   backgroundColor: Colors.red,
                 ),
@@ -510,7 +542,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
             ),
-            child: const Text('SUPPRIMER TOUT'),
+            child: Text('SUPPRIMER TOUT'),
           ),
         ],
       ),

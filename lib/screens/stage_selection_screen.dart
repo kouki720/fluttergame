@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '../widgets/stage_card.dart';
 import '../models/stage_data.dart';
 import '../managers/audio_manager.dart';
+import '../managers/game_manager.dart';
+import '../utils/responsive_helper.dart';
+import 'upgrade_shop_screen.dart';
+import 'story_screen.dart';
 
 class StageSelectionScreen extends StatefulWidget {
   const StageSelectionScreen({super.key});
@@ -15,8 +19,9 @@ class _StageSelectionScreenState extends State<StageSelectionScreen>
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
 
-  // Progression du joueur (à remplacer par sauvegarde plus tard)
-  int currentUnlockedStage = 1; // Stage 1 débloqué par défaut
+  // Progression du joueur
+  int currentUnlockedStage = 1;
+  final GameManager _gameManager = GameManager();
 
   // Liste des 8 stages
   final List<StageData> stages = [
@@ -117,9 +122,6 @@ class _StageSelectionScreenState extends State<StageSelectionScreen>
     // Débloquer les stages selon la progression
     _unlockStages();
 
-    // La musique menu continue automatiquement
-    // Pas besoin de changer la musique ici
-
     // Animation d'entrée
     _animController = AnimationController(
       duration: const Duration(milliseconds: 800),
@@ -149,6 +151,9 @@ class _StageSelectionScreenState extends State<StageSelectionScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isSmallScreen = ResponsiveHelper.isSmallScreen(context);
+    final isPortrait = ResponsiveHelper.isPortrait(context);
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -167,6 +172,9 @@ class _StageSelectionScreenState extends State<StageSelectionScreen>
               // En-tête
               _buildHeader(context),
 
+              // Section coins et améliorations
+              _buildCoinsAndUpgradeSection(),
+
               // Liste des stages
               Expanded(
                 child: FadeTransition(
@@ -182,40 +190,44 @@ class _StageSelectionScreenState extends State<StageSelectionScreen>
   }
 
   Widget _buildHeader(BuildContext context) {
+    final isSmallScreen = ResponsiveHelper.isSmallScreen(context);
+
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
       child: Row(
         children: [
           // Bouton retour
           IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white, size: 32),
+            icon: Icon(Icons.arrow_back,
+                color: Colors.white,
+                size: isSmallScreen ? 28 : 32),
             onPressed: () {
               AudioManager().playSfx('button_click.mp3');
               Navigator.pop(context);
             },
           ),
 
-          const SizedBox(width: 16),
+          SizedBox(width: isSmallScreen ? 12 : 16),
 
           // Titre
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'SÉLECTION DU STAGE',
                   style: TextStyle(
-                    fontSize: 32,
+                    fontSize: isSmallScreen ? 24 : 32,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
-                    letterSpacing: 2,
+                    letterSpacing: isSmallScreen ? 1 : 2,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   'Progression: $currentUnlockedStage/8 stages débloqués',
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 12 : 14,
                     color: Colors.white70,
                   ),
                 ),
@@ -223,21 +235,26 @@ class _StageSelectionScreenState extends State<StageSelectionScreen>
             ),
           ),
 
-          // Score total (à implémenter plus tard)
+          // Score total
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: EdgeInsets.symmetric(
+                horizontal: isSmallScreen ? 12 : 16,
+                vertical: isSmallScreen ? 6 : 8
+            ),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.star, color: Colors.amber, size: 24),
-                SizedBox(width: 8),
+                Icon(Icons.star,
+                    color: Colors.amber,
+                    size: isSmallScreen ? 20 : 24),
+                SizedBox(width: isSmallScreen ? 6 : 8),
                 Text(
                   '0',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: isSmallScreen ? 16 : 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
@@ -250,18 +267,123 @@ class _StageSelectionScreenState extends State<StageSelectionScreen>
     );
   }
 
-  Widget _buildStageGrid() {
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4, // 4 stages par ligne (mode paysage)
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 0.85,
+  // Section coins et améliorations
+  Widget _buildCoinsAndUpgradeSection() {
+    final isSmallScreen = ResponsiveHelper.isSmallScreen(context);
+    final isPortrait = ResponsiveHelper.isPortrait(context);
+
+    return Container(
+      margin: EdgeInsets.symmetric(
+          horizontal: isSmallScreen ? 16 : 20,
+          vertical: isSmallScreen ? 8 : 10
       ),
-      itemCount: stages.length,
-      itemBuilder: (context, index) {
-        return _buildStageCard(stages[index], index);
+      padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.white.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          // Affichage des coins
+          Expanded(
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                  horizontal: isSmallScreen ? 12 : 16,
+                  vertical: isSmallScreen ? 6 : 8
+              ),
+              decoration: BoxDecoration(
+                color: Colors.amber.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.amber),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.monetization_on,
+                      color: Colors.amber,
+                      size: isSmallScreen ? 20 : 24),
+                  SizedBox(width: isSmallScreen ? 6 : 8),
+                  Text(
+                    '${_gameManager.playerStats.coins}',
+                    style: TextStyle(
+                      fontSize: isSmallScreen ? 16 : 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.amber,
+                    ),
+                  ),
+                  SizedBox(width: isSmallScreen ? 2 : 4),
+                  Text(
+                    'Coins',
+                    style: TextStyle(
+                      fontSize: isSmallScreen ? 12 : 14,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          SizedBox(width: isSmallScreen ? 12 : 16),
+
+          // Bouton améliorations
+          ElevatedButton.icon(
+            onPressed: () {
+              AudioManager().playSfx('button_click.mp3');
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const UpgradeShopScreen(),
+                ),
+              );
+            },
+            icon: Icon(Icons.upgrade,
+                size: isSmallScreen ? 20 : 24),
+            label: Text(
+              'AMÉLIORATIONS',
+              style: TextStyle(
+                fontSize: isSmallScreen ? 12 : 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2196F3),
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(
+                  horizontal: isSmallScreen ? 12 : 20,
+                  vertical: isSmallScreen ? 8 : 12
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStageGrid() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columnCount = ResponsiveHelper.getResponsiveColumnCount(context);
+        final isPortrait = ResponsiveHelper.isPortrait(context);
+        final isSmallScreen = ResponsiveHelper.isSmallScreen(context);
+
+        return GridView.builder(
+          padding: EdgeInsets.all(isSmallScreen ? 8 : 16),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columnCount,
+            crossAxisSpacing: isSmallScreen ? 8 : 16,
+            mainAxisSpacing: isSmallScreen ? 8 : 16,
+            childAspectRatio: isPortrait ? 0.7 : 0.85,
+          ),
+          itemCount: stages.length,
+          itemBuilder: (context, index) {
+            return _buildStageCard(stages[index], index);
+          },
+        );
       },
     );
   }
@@ -269,9 +391,8 @@ class _StageSelectionScreenState extends State<StageSelectionScreen>
   Widget _buildStageCard(StageData stage, int index) {
     return StageCard(
       stage: stage,
-      delay: index * 100, // Animation décalée pour chaque carte
+      delay: index * 100,
       onTap: () {
-        AudioManager().playSfx('button_click.mp3');
         if (stage.isUnlocked) {
           _onStageSelected(stage);
         } else {
@@ -282,99 +403,13 @@ class _StageSelectionScreenState extends State<StageSelectionScreen>
   }
 
   void _onStageSelected(StageData stage) {
-    // ICI on change la musique pour le gameplay
-    AudioManager().playMusic('gameplay_music.mp3');
+    // Lancer directement l'écran d'histoire
+    AudioManager().playSfx('button_click.mp3');
 
-    // Navigation vers l'écran d'histoire du stage
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1B5E20),
-        title: Row(
-          children: [
-            Icon(stage.icon, color: Colors.white),
-            const SizedBox(width: 8),
-            Text(
-              'Stage ${stage.stageNumber}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          '${stage.title}\n\n'
-              '${stage.description}\n\n'
-              '📍 ${stage.location}\n'
-              '🎯 ${stage.theme}\n'
-              '⚡ Difficulté: ${stage.difficulty}\n\n'
-              '🎵 Musique de gameplay activée !\n\n'
-              'L\'écran d\'histoire sera implémenté dans l\'étape suivante !',
-          style: const TextStyle(
-            color: Colors.white70,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              AudioManager().playSfx('button_click.mp3');
-              Navigator.pop(context);
-            },
-            child: const Text(
-              'Annuler',
-              style: TextStyle(color: Colors.white60),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              AudioManager().playSfx('stage_complete.mp3');
-              Navigator.pop(context);
-              // TODO: Naviguer vers l'écran d'histoire
-              _showComingSoonDialog();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4CAF50),
-            ),
-            child: const Text('Commencer l\'aventure'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showComingSoonDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1B5E20),
-        title: const Row(
-          children: [
-            Icon(Icons.construction, color: Colors.orange),
-            SizedBox(width: 8),
-            Text(
-              'Fonctionnalité à venir',
-              style: TextStyle(color: Colors.white),
-            ),
-          ],
-        ),
-        content: const Text(
-          'L\'écran d\'histoire (comic/manga) et le gameplay 2D avec Flame seront implémentés dans les prochaines étapes !\n\n'
-              'Pour l\'instant, la musique de gameplay est activée et le système de progression est en place.',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              AudioManager().playSfx('button_click.mp3');
-              Navigator.pop(context);
-            },
-            child: const Text(
-              'Compris',
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-        ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => StoryScreen(stage: stage),
       ),
     );
   }
@@ -383,32 +418,21 @@ class _StageSelectionScreenState extends State<StageSelectionScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1B5E20),
         title: const Row(
           children: [
             Icon(Icons.lock, color: Colors.orange),
             SizedBox(width: 8),
-            Text(
-              'Stage Verrouillé',
-              style: TextStyle(color: Colors.white),
-            ),
+            Text('Stage Verrouillé'),
           ],
         ),
         content: Text(
           'Le stage ${stage.stageNumber} : "${stage.title}" est verrouillé.\n\n'
               'Complète le stage ${stage.stageNumber - 1} pour débloquer ce stage !',
-          style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
-            onPressed: () {
-              AudioManager().playSfx('button_click.mp3');
-              Navigator.pop(context);
-            },
-            child: const Text(
-              'Compris',
-              style: TextStyle(color: Colors.white),
-            ),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Compris'),
           ),
         ],
       ),

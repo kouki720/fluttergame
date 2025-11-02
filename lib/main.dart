@@ -2,16 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'screens/splash_screen.dart';
 import 'managers/audio_manager.dart'; // AJOUTEZ CET IMPORT
+import 'managers/game_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialiser l'audio manager
   await AudioManager().init();
-
+  await GameManager().init();
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
+    DeviceOrientation.portraitUp,      // ✅ AJOUTER
+    DeviceOrientation.portraitDown,
   ]);
 
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
