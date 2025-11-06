@@ -51,6 +51,10 @@ flutter:
     - assets/images/objects/
     - assets/images/collectibles/
     - assets/images/powerups/
+    - assets/images/backgrounds/stage1/sky.png
+    - assets/images/backgrounds/stage1/land.png
+    - assets/images/backgrounds/stage1/sea.png
+    - assets/images/backgrounds/stage1/cloud.png
 
     # Audio
     - assets/audio/

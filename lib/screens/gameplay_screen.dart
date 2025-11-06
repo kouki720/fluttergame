@@ -1,153 +1,141 @@
 import 'package:flutter/material.dart';
-import '../managers/audio_manager.dart';
+import 'package:flame/game.dart';
+import '../game/eco_warrior_game.dart';
 import '../models/stage_data.dart';
+import '../managers/audio_manager.dart';
 
-class GameplayScreen extends StatelessWidget {
+class GameplayScreen extends StatefulWidget {
   final StageData stage;
 
   const GameplayScreen({super.key, required this.stage});
 
   @override
-  Widget build(BuildContext context) {
+  State<GameplayScreen> createState() => _GameplayScreenState();
+}
+
+class _GameplayScreenState extends State<GameplayScreen> {
+  late final EcoWarriorGame game;
+  bool _isPaused = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Initialiser le jeu
+    game = EcoWarriorGame();
+
     // Changer la musique pour le gameplay
     AudioManager().playMusic('stage1_music.mp3');
+  }
 
+  @override
+  void dispose() {
+    // Nettoyer si nécessaire
+    super.dispose();
+  }
+
+  void _togglePause() {
+    setState(() {
+      _isPaused = !_isPaused;
+    });
+
+    if (_isPaused) {
+      AudioManager().pauseMusic();
+    } else {
+      AudioManager().resumeMusic();
+    }
+  }
+
+  void _exitGame() {
+    AudioManager().playSfx('button_click.mp3');
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue[900],
       body: Stack(
         children: [
-          // Fond temporaire
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.blue.shade800,
-                  Colors.blue.shade600,
-                  const Color(0xFF1B5E20),
-                ],
+          // Jeu Flame
+          GameWidget(
+            game: game,
+            overlayBuilderMap: {
+              'pauseMenu': (context, game) => _buildPauseMenu(),
+            },
+          ),
+
+          // En-tête du stage
+          Positioned(
+            top: 20,
+            left: 0,
+            right: 0,
+            child: _buildStageHeader(),
+          ),
+
+          // Bouton pause en haut à droite
+          Positioned(
+            top: 20,
+            right: 20,
+            child: IconButton(
+              icon: Icon(
+                _isPaused ? Icons.play_arrow : Icons.pause,
+                color: Colors.white,
+                size: 32,
               ),
+              onPressed: _togglePause,
             ),
           ),
 
-          // Contenu temporaire
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                children: [
-                  // En-tête
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () {
-                          AudioManager().playSfx('button_click.mp3');
-                          Navigator.pop(context);
-                        },
-                      ),
-                      Text(
-                        'STAGE ${stage.stageNumber}',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.pause, color: Colors.white),
-                        onPressed: () {
-                          AudioManager().playSfx('button_click.mp3');
-                          _showPauseMenu(context);
-                        },
-                      ),
-                    ],
-                  ),
-
-                  const Spacer(),
-
-                  // Message temporaire
-                  Container(
-                    padding: const EdgeInsets.all(30),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white),
-                    ),
-                    child: Column(
-                      children: [
-                        const Icon(
-                          Icons.construction,
-                          size: 80,
-                          color: Colors.orange,
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          'GAMEPLAY EN DÉVELOPPEMENT',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 15),
-                        Text(
-                          'Le stage "${stage.title}" sera bientôt disponible !',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.white,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 25),
-                        Text(
-                          '🎮 Contrôles prévus :\n'
-                              '• Joystick : Déplacement\n'
-                              '• Bouton A : Saut\n'
-                              '• Bouton B : Attaque Épée\n'
-                              '• Bouton X : Attaque Flamme\n'
-                              '• Timer : 3 minutes\n'
-                              '• Objectif : Battre les ennemis de pollution',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.white70,
-                            height: 1.5,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const Spacer(),
-
-                  // Bouton retour
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      AudioManager().playSfx('button_click.mp3');
-                      Navigator.pop(context);
-                    },
-                    icon: const Icon(Icons.exit_to_app),
-                    label: const Text(
-                      'RETOUR À LA SÉLECTION',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 30,
-                        vertical: 15,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-                ],
+          // Bouton retour en haut à gauche
+          Positioned(
+            top: 20,
+            left: 20,
+            child: IconButton(
+              icon: const Icon(
+                Icons.arrow_back,
+                color: Colors.white,
+                size: 32,
               ),
+              onPressed: _exitGame,
+            ),
+          ),
+
+          // Indicateurs de contrôle (pour aider le joueur)
+          Positioned(
+            bottom: 20,
+            left: 20,
+            child: _buildControlHints(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStageHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      margin: const EdgeInsets.symmetric(horizontal: 60), // Centrer
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        children: [
+          Text(
+            widget.stage.title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            widget.stage.location,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.white70,
             ),
           ),
         ],
@@ -155,73 +143,95 @@ class GameplayScreen extends StatelessWidget {
     );
   }
 
-  void _showPauseMenu(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1B5E20),
-        title: const Row(
+  Widget _buildControlHints() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildControlHint('⬅️ Zone gauche', 'Déplacement gauche'),
+          const SizedBox(height: 6),
+          _buildControlHint('➡️ Zone droite', 'Déplacement droite'),
+          const SizedBox(height: 6),
+          _buildControlHint('🔼 Zone haut', 'Sauter'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildControlHint(String icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          icon,
+          style: const TextStyle(fontSize: 16),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          text,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPauseMenu() {
+    if (!_isPaused) return const SizedBox.shrink();
+
+    return Container(
+      color: Colors.black.withOpacity(0.7),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.pause_circle_filled, color: Colors.white),
-            SizedBox(width: 10),
-            Text(
+            const Text(
               'JEU EN PAUSE',
               style: TextStyle(
-                color: Colors.white,
+                fontSize: 32,
                 fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Stage ${widget.stage.stageNumber}: ${widget.stage.title}',
+              style: const TextStyle(
+                fontSize: 18,
+                color: Colors.white70,
+              ),
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton.icon(
+              onPressed: _togglePause,
+              icon: const Icon(Icons.play_arrow),
+              label: const Text('REPRENDRE'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+              ),
+            ),
+            const SizedBox(height: 15),
+            ElevatedButton.icon(
+              onPressed: _exitGame,
+              icon: const Icon(Icons.exit_to_app),
+              label: const Text('QUITTER LE STAGE'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
               ),
             ),
           ],
         ),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Que souhaitez-vous faire ?',
-              style: TextStyle(color: Colors.white70),
-            ),
-          ],
-        ),
-        actions: [
-          // Continuer
-          TextButton(
-            onPressed: () {
-              AudioManager().playSfx('button_click.mp3');
-              Navigator.pop(context);
-            },
-            child: const Text(
-              'CONTINUER',
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-
-          // Redémarrer
-          TextButton(
-            onPressed: () {
-              AudioManager().playSfx('button_click.mp3');
-              Navigator.pop(context);
-              // Ici on redémarrerait le niveau
-            },
-            child: const Text(
-              'REDÉMARRER',
-              style: TextStyle(color: Colors.orange),
-            ),
-          ),
-
-          // Quitter
-          TextButton(
-            onPressed: () {
-              AudioManager().playSfx('button_click.mp3');
-              Navigator.pop(context); // Fermer la pause
-              Navigator.pop(context); // Retour à la sélection
-            },
-            child: const Text(
-              'QUITTER',
-              style: TextStyle(color: Colors.red),
-            ),
-          ),
-        ],
       ),
     );
   }
