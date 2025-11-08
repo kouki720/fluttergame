@@ -7,16 +7,19 @@ import 'package:eco_warrior_tunisia1/managers/audio_manager.dart';
 enum GameJoystickDirection { idle, left, right, jump }
 enum GameAction { swordAttack, flameAttack }
 
-class JoystickComponent extends PositionComponent with TapCallbacks, HasGameRef {
+class GameJoystickComponent extends PositionComponent with TapCallbacks, HasGameRef {
   final Function(GameJoystickDirection) onDirectionChanged;
   final Function() onJump;
   final Function(GameAction) onAction;
 
-  // Dimensions des boutons
-  double buttonSize = 0.0;
-  double margin = 0.0;
+  // Variables pour les boutons
+  late final CircleComponent _leftButton;
+  late final CircleComponent _rightButton;
+  late final CircleComponent _jumpButton;
+  late final CircleComponent _swordButton;
+  late final CircleComponent _flameButton;
 
-  JoystickComponent({
+  GameJoystickComponent({
     required this.onDirectionChanged,
     required this.onJump,
     required this.onAction,
@@ -26,198 +29,167 @@ class JoystickComponent extends PositionComponent with TapCallbacks, HasGameRef 
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // Définir la taille et position du composant pour couvrir tout l'écran
-    size = gameRef.size;
+    // ✅ CORRECTION : Utiliser game.size au lieu de gameRef.size
+    size = game.size;
     position = Vector2.zero();
 
-    // Calculer les dimensions des boutons
-    buttonSize = size.x * 0.08;
-    margin = size.x * 0.04;
-
-    print('🎮 JoystickComponent chargé - Taille: $size');
-    print('🎮 Bouton size: $buttonSize, Margin: $margin');
-  }
-
-  @override
-  void render(Canvas canvas) {
-    _renderMovementButtons(canvas);
-    _renderActionButtons(canvas);
-  }
-
-  void _renderMovementButtons(Canvas canvas) {
-    // Bouton gauche
-    final leftButton = Rect.fromLTWH(
-      margin,
-      size.y - buttonSize - margin,
-      buttonSize,
-      buttonSize,
-    );
-
-    // Bouton droite
-    final rightButton = Rect.fromLTWH(
-      margin + buttonSize + 8,
-      size.y - buttonSize - margin,
-      buttonSize,
-      buttonSize,
-    );
-
-    _drawButton(canvas, leftButton, Icons.arrow_back_ios, Colors.white.withOpacity(0.3));
-    _drawButton(canvas, rightButton, Icons.arrow_forward_ios, Colors.white.withOpacity(0.3));
-  }
-
-  void _renderActionButtons(Canvas canvas) {
+    final buttonSize = size.x * 0.08;
+    final margin = size.x * 0.04;
     final buttonSpacing = 8.0;
 
-    final jumpButton = Rect.fromLTWH(
-      size.x - (buttonSize * 2) - margin - buttonSpacing,
-      size.y - buttonSize - margin,
-      buttonSize,
-      buttonSize,
+    // Créer les boutons avec les nouveaux composants CircleComponent
+    _leftButton = CircleComponent(
+      radius: buttonSize / 2,
+      position: Vector2(margin + buttonSize / 2, size.y - margin - buttonSize / 2),
+      anchor: Anchor.center,
+      paint: Paint()..color = Colors.white.withOpacity(0.3),
     );
 
-    final swordButton = Rect.fromLTWH(
-      size.x - buttonSize - margin,
-      size.y - buttonSize - margin,
-      buttonSize,
-      buttonSize,
+    _rightButton = CircleComponent(
+      radius: buttonSize / 2,
+      position: Vector2(margin + buttonSize * 1.5 + 8, size.y - margin - buttonSize / 2),
+      anchor: Anchor.center,
+      paint: Paint()..color = Colors.white.withOpacity(0.3),
     );
 
-    final flameButton = Rect.fromLTWH(
-      size.x - buttonSize - margin,
-      size.y - (buttonSize * 2) - margin - buttonSpacing,
-      buttonSize,
-      buttonSize,
-    );
-
-    _drawButton(canvas, jumpButton, Icons.arrow_upward, Colors.green.withOpacity(0.3));
-    _drawButton(canvas, swordButton, Icons.architecture, Colors.blue.withOpacity(0.3));
-    _drawButton(canvas, flameButton, Icons.local_fire_department, Colors.orange.withOpacity(0.3));
-  }
-
-  void _drawButton(Canvas canvas, Rect rect, IconData icon, Color color) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    final borderPaint = Paint()
-      ..color = Colors.white.withOpacity(0.5)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-
-    canvas.drawCircle(rect.center, rect.width / 2, paint);
-    canvas.drawCircle(rect.center, rect.width / 2, borderPaint);
-
-    // Icône
-    final textPainter = TextPainter(textDirection: TextDirection.ltr);
-    textPainter.text = TextSpan(
-      text: String.fromCharCode(icon.codePoint),
-      style: TextStyle(
-        fontSize: rect.width / 2.5,
-        fontFamily: icon.fontFamily,
-        color: Colors.white,
+    _jumpButton = CircleComponent(
+      radius: buttonSize / 2,
+      position: Vector2(
+        size.x - (buttonSize * 1.5) - margin - buttonSpacing,
+        size.y - margin - buttonSize / 2,
       ),
+      anchor: Anchor.center,
+      paint: Paint()..color = Colors.green.withOpacity(0.3),
     );
 
-    textPainter.layout();
-    textPainter.paint(
-      canvas,
-      Offset(
-        rect.center.dx - textPainter.width / 2,
-        rect.center.dy - textPainter.height / 2,
-      ),
+    _swordButton = CircleComponent(
+      radius: buttonSize / 2,
+      position: Vector2(size.x - margin - buttonSize / 2, size.y - margin - buttonSize / 2),
+      anchor: Anchor.center,
+      paint: Paint()..color = Colors.blue.withOpacity(0.3),
     );
+
+    _flameButton = CircleComponent(
+      radius: buttonSize / 2,
+      position: Vector2(
+        size.x - margin - buttonSize / 2,
+        size.y - margin - buttonSize * 1.5 - buttonSpacing,
+      ),
+      anchor: Anchor.center,
+      paint: Paint()..color = Colors.orange.withOpacity(0.3),
+    );
+
+    // Ajouter tous les boutons comme enfants
+    await addAll([_leftButton, _rightButton, _jumpButton, _swordButton, _flameButton]);
+
+    print('🎮 GameJoystickComponent initialisé avec ${children.length} boutons');
+    print('📏 Taille des boutons: $buttonSize, Écran: $size');
   }
 
   @override
   void onTapDown(TapDownEvent event) {
     final position = event.localPosition;
-    print('🖱️ TapDown détecté à la position: $position');
+    print('🖱️ Tap détecté à: $position');
     _handleTap(position);
+  }
+
+  void _handleTap(Vector2 position) {
+    // Vérifier chaque bouton avec containsPoint
+    if (_leftButton.containsPoint(position)) {
+      _triggerButton('GAUCHE', () => onDirectionChanged(GameJoystickDirection.left));
+    } else if (_rightButton.containsPoint(position)) {
+      _triggerButton('DROITE', () => onDirectionChanged(GameJoystickDirection.right));
+    } else if (_jumpButton.containsPoint(position)) {
+      _triggerButton('JUMP', onJump);
+    } else if (_swordButton.containsPoint(position)) {
+      _triggerButton('SWORD', () => onAction(GameAction.swordAttack));
+    } else if (_flameButton.containsPoint(position)) {
+      _triggerButton('FLAME', () => onAction(GameAction.flameAttack));
+    } else {
+      print('🎯 Tap en dehors des boutons');
+    }
+  }
+
+  void _triggerButton(String buttonName, VoidCallback action) {
+    print('🎯 BOUTON $buttonName pressé!');
+    AudioManager().playSfx('button_click.mp3');
+
+    // Effet visuel temporaire
+    _animateButtonPress(buttonName);
+
+    // Exécuter l'action
+    action();
+  }
+
+  void _animateButtonPress(String buttonName) {
+    final button = _getButtonByName(buttonName);
+    if (button != null) {
+      final originalColor = button.paint.color;
+      button.paint.color = originalColor.withOpacity(0.6);
+
+      // Timer pour remettre la couleur originale
+      final timer = TimerComponent(
+        period: 0.1,
+        removeOnFinish: true,
+        onTick: () {
+          button.paint.color = originalColor;
+        },
+      );
+      add(timer);
+    }
+  }
+
+  CircleComponent? _getButtonByName(String name) {
+    switch (name) {
+      case 'GAUCHE': return _leftButton;
+      case 'DROITE': return _rightButton;
+      case 'JUMP': return _jumpButton;
+      case 'SWORD': return _swordButton;
+      case 'FLAME': return _flameButton;
+      default: return null;
+    }
   }
 
   @override
   void onTapUp(TapUpEvent event) {
-    print('🖱️ TapUp - Retour à l\'état idle');
+    print('🖱️ Tap relâché - Retour à idle');
     onDirectionChanged(GameJoystickDirection.idle);
   }
 
   @override
   void onTapCancel(TapCancelEvent event) {
-    print('🖱️ TapCancel - Retour à l\'état idle');
+    print('🖱️ Tap annulé - Retour à idle');
     onDirectionChanged(GameJoystickDirection.idle);
   }
 
-  void _handleTap(Vector2 position) {
-    final buttonSpacing = 8.0;
+  // Méthode de rendu pour le débogage visuel
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
 
-    // Boutons mouvement
-    final leftButton = Rect.fromLTWH(
-        margin,
-        size.y - buttonSize - margin,
-        buttonSize,
-        buttonSize
+    // Dessiner les zones de débogage (optionnel)
+    _drawDebugInfo(canvas);
+  }
+
+  void _drawDebugInfo(Canvas canvas) {
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+
+    // Afficher la position des boutons pour débogage
+    final debugText = '''
+Boutons Joystick:
+- Gauche: ${_leftButton.position}
+- Droite: ${_rightButton.position}
+- Jump: ${_jumpButton.position}
+- Sword: ${_swordButton.position}
+- Flame: ${_flameButton.position}
+''';
+
+    textPainter.text = TextSpan(
+      text: debugText,
+      style: TextStyle(color: Colors.white, fontSize: 10),
     );
 
-    final rightButton = Rect.fromLTWH(
-        margin + buttonSize + 8,
-        size.y - buttonSize - margin,
-        buttonSize,
-        buttonSize
-    );
-
-    // Boutons action
-    final jumpButton = Rect.fromLTWH(
-      size.x - (buttonSize * 2) - margin - buttonSpacing,
-      size.y - buttonSize - margin,
-      buttonSize,
-      buttonSize,
-    );
-
-    final swordButton = Rect.fromLTWH(
-      size.x - buttonSize - margin,
-      size.y - buttonSize - margin,
-      buttonSize,
-      buttonSize,
-    );
-
-    final flameButton = Rect.fromLTWH(
-      size.x - buttonSize - margin,
-      size.y - (buttonSize * 2) - margin - buttonSpacing,
-      buttonSize,
-      buttonSize,
-    );
-
-    print('🎯 Vérification des boutons:');
-    print('   Left: $leftButton');
-    print('   Right: $rightButton');
-    print('   Jump: $jumpButton');
-    print('   Sword: $swordButton');
-    print('   Flame: $flameButton');
-    print('   Position tap: $position');
-
-    // Détection des boutons avec sons et messages de console
-    if (leftButton.contains(Offset(position.x, position.y))) {
-      print('⬅️ BOUTON GAUCHE pressé!');
-      AudioManager().playSfx('button_click.mp3');
-      onDirectionChanged(GameJoystickDirection.left);
-    } else if (rightButton.contains(Offset(position.x, position.y))) {
-      print('➡️ BOUTON DROITE pressé!');
-      AudioManager().playSfx('button_click.mp3');
-      onDirectionChanged(GameJoystickDirection.right);
-    } else if (jumpButton.contains(Offset(position.x, position.y))) {
-      print('🦘 BOUTON JUMP pressé!');
-      AudioManager().playSfx('button_click.mp3');
-      onJump();
-    } else if (swordButton.contains(Offset(position.x, position.y))) {
-      print('⚔️ BOUTON SWORD pressé!');
-      AudioManager().playSfx('button_click.mp3');
-      onAction(GameAction.swordAttack);
-    } else if (flameButton.contains(Offset(position.x, position.y))) {
-      print('🔥 BOUTON FLAME pressé!');
-      AudioManager().playSfx('button_click.mp3');
-      onAction(GameAction.flameAttack);
-    } else {
-      print('🎯 Tap en dehors des boutons - Position: $position');
-    }
+    textPainter.layout();
+    textPainter.paint(canvas, Offset(10, 100));
   }
 }

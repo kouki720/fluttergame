@@ -10,9 +10,9 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Flame - Moteur de jeu 2D
-  flame: ^1.18.0
-  flame_audio: ^2.1.0
+  # 🔥 Flame 1.33.0 avec versions compatibles
+  flame: ^1.33.0
+  flame_audio: ^2.11.11
 
   # UI et Navigation
   cupertino_icons: ^1.0.2
@@ -28,8 +28,10 @@ dependencies:
 
   # Utilitaires
   collection: ^1.18.0
-  animated_background: ^2.0.0  # Pour animations de particules
-  audioplayers: ^5.2.1
+  animated_background: ^2.0.0
+
+  # Audio - VERSION CORRIGÉE
+  audioplayers: ^6.5.1  # Version stable existante
 
 dev_dependencies:
   flutter_test:
@@ -41,7 +43,7 @@ flutter:
 
   # Assets du jeu
   assets:
-    # Images - Joueur
+    # Images
     - assets/images/
     - assets/images/player/
     - assets/images/enemies/
@@ -55,27 +57,21 @@ flutter:
     - assets/images/backgrounds/stage1/2.png
     - assets/images/backgrounds/stage1/3.png
     - assets/images/backgrounds/stage1/4.png
+
+    # Audio
     - assets/audio/music/stage1_music.mp3
+    - assets/audio/music/stage2_music.mp3
+    - assets/audio/music/stage3_music.mp3
+    - assets/audio/music/menu_music.mp3
     - assets/audio/music/story_music.mp3
+
+    # SFX
     - assets/audio/sfx/button_click.mp3
     - assets/audio/sfx/jump.mp3
     - assets/audio/sfx/sword_attack.mp3
     - assets/audio/sfx/flame_attack.mp3
+    - assets/audio/sfx/power_up.mp3
+    - assets/audio/sfx/keyboard_typing.mp3
 
-    # Audio
-    - assets/audio/
-    - assets/audio/music/
-    - assets/audio/sfx/
-
-    # Data (JSON files)
+    # Data
     - assets/data/
-
-  # Fonts personnalisées (optionnel)
-  # Décommentez si vous ajoutez des polices
-  # fonts:
-  #   - family: GameFont
-  #     fonts:
-  #       - asset: assets/fonts/game_font.ttf
-  #         weight: 400
-  #       - asset: assets/fonts/game_font_bold.ttf
-  #         weight: 700

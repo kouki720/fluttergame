@@ -15,50 +15,37 @@ class GameplayScreen extends StatefulWidget {
 }
 
 class _GameplayScreenState extends State<GameplayScreen> {
-  late EcoWarriorGame game;
+  late final EcoWarriorGame game;
   bool _isPaused = false;
   bool _showGameOver = false;
 
   @override
   void initState() {
     super.initState();
-    print('🎮 Initialisation de l\'écran de jeu pour le stage ${widget.stage.stageNumber}');
     _initializeGame();
   }
 
   void _initializeGame() {
-    print('🔄 Initialisation du jeu...');
-
-    // Arrêter toute musique précédente
-    AudioManager().stopMusic();
-
     game = EcoWarriorGame();
 
-    // Configurer les callbacks
+    // Configuration des callbacks avec Flame 1.33.0
     game.onTimeUpdate = _refreshUI;
     game.onGameOver = _showGameOverScreen;
+    game.onScoreUpdate = _onScoreUpdate;
 
     _playStageMusic();
-
-    print('✅ Jeu initialisé avec succès');
   }
 
   void _playStageMusic() {
-    final stageMusic = 'stage${widget.stage.stageNumber}_music.mp3';
-    print('🎵 Lancement de la musique: $stageMusic');
-
-    AudioManager().playMusic(stageMusic).catchError((error) {
-      print('❌ Musique $stageMusic non trouvée, utilisation du fallback');
-      AudioManager().playMusic('stage1_music.mp3').catchError((error2) {
-        print('❌ Fallback aussi échoué, jeu sans musique');
-      });
-    });
+    AudioManager().playMusic('stage${widget.stage.stageNumber}_music.mp3')
+        .catchError((_) => AudioManager().playMusic('stage1_music.mp3'));
   }
 
-  void _refreshUI() {
-    if (mounted) {
-      setState(() {});
-    }
+  void _refreshUI() => setState(() {});
+
+  void _onScoreUpdate() {
+    setState(() {});
+    // Effet visuel pour le score (optionnel)
   }
 
   void _showGameOverScreen() {
@@ -67,50 +54,34 @@ class _GameplayScreenState extends State<GameplayScreen> {
         _showGameOver = true;
         _isPaused = true;
       });
-      print('💀 Écran Game Over affiché');
     }
   }
 
   @override
   void dispose() {
-    print('🗑️ Nettoyage de l\'écran de jeu');
     AudioManager().stopMusic();
     super.dispose();
   }
 
   void _togglePause() {
-    print('⏸️ Bouton pause pressé - État actuel: $_isPaused');
     AudioManager().playSfx('button_click.mp3');
-    setState(() {
-      _isPaused = !_isPaused;
-    });
+    setState(() => _isPaused = !_isPaused);
 
-    if (_isPaused) {
-      game.pauseGame();
-      AudioManager().pauseMusic();
-    } else {
-      game.resumeGame();
-      AudioManager().resumeMusic();
-    }
+    _isPaused ? game.pauseGame() : game.resumeGame();
+    _isPaused ? AudioManager().pauseMusic() : AudioManager().resumeMusic();
   }
 
   void _restartGame() {
-    print('🔄 Redémarrage du jeu demandé');
     AudioManager().playSfx('button_click.mp3');
-
     setState(() {
       _isPaused = false;
       _showGameOver = false;
     });
-
     game.resetGame();
     _playStageMusic();
-
-    print('✅ Jeu redémarré');
   }
 
   void _exitToMenu() {
-    print('🚪 Retour au menu principal');
     AudioManager().playSfx('button_click.mp3');
     AudioManager().stopMusic();
     Navigator.pop(context);
@@ -121,123 +92,193 @@ class _GameplayScreenState extends State<GameplayScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Jeu Flame
+          // Jeu principal
           GameWidget(
             game: game,
             overlayBuilderMap: {
-              'pauseOverlay': (context, game) => _isPaused ? _buildPauseMenu() : const SizedBox.shrink(),
-              'hudOverlay': (context, game) => _buildHUD(),
-              'gameOverOverlay': (context, game) => _showGameOver ? _buildGameOverMenu() : const SizedBox.shrink(),
+              'pauseOverlay': _buildPauseOverlay,
+              'hudOverlay': _buildHUDOverlay,
+              'gameOverOverlay': _buildGameOverOverlay,
             },
-          ),
-
-          // Bouton pause
-          Positioned(
-            top: 20,
-            right: 20,
-            child: IconButton(
-              icon: Icon(
-                _isPaused ? Icons.play_arrow : Icons.pause,
-                color: Colors.white,
-                size: 32,
-              ),
-              onPressed: _togglePause,
-            ),
-          ),
-
-          // Bouton retour
-          Positioned(
-            top: 20,
-            left: 20,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white, size: 32),
-              onPressed: _exitToMenu,
-            ),
-          ),
-
-          // Overlay de débogage temporaire (vous pouvez le retirer plus tard)
-          Positioned(
-            top: 70,
-            left: 20,
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
-                borderRadius: BorderRadius.circular(10),
-              ),
+            loadingBuilder: (context) => Center(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    'Débogage:',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                  Text(
-                    'Stage: ${widget.stage.stageNumber}',
-                    style: TextStyle(color: Colors.white, fontSize: 10),
-                  ),
-                  Text(
-                    'Score: ${game.score}',
-                    style: TextStyle(color: Colors.white, fontSize: 10),
-                  ),
-                  Text(
-                    'Timer: ${game.timer}s',
-                    style: TextStyle(color: Colors.white, fontSize: 10),
-                  ),
-                  Text(
-                    'Pause: $_isPaused',
-                    style: TextStyle(color: Colors.white, fontSize: 10),
-                  ),
-                  Text(
-                    'GameOver: $_showGameOver',
-                    style: TextStyle(color: Colors.white, fontSize: 10),
+                  CircularProgressIndicator(color: Colors.green),
+                  SizedBox(height: 20),
+                  Text('Chargement du niveau...', style: TextStyle(color: Colors.white)),
+                ],
+              ),
+            ),
+            errorBuilder: (context, error) => Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error, color: Colors.red, size: 50),
+                  SizedBox(height: 20),
+                  Text('Erreur de chargement', style: TextStyle(color: Colors.white)),
+                  SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: _initializeGame,
+                    child: Text('Réessayer'),
                   ),
                 ],
               ),
             ),
           ),
+
+          // Boutons UI
+          _buildUIButtons(),
         ],
       ),
     );
   }
 
-  Widget _buildHUD() {
+  Widget _buildUIButtons() {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 10,
+      left: 0,
+      right: 0,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Bouton retour
+            _buildIconButton(
+              icon: Icons.arrow_back,
+              onPressed: _exitToMenu,
+              color: Colors.white,
+            ),
+
+            // Bouton pause
+            _buildIconButton(
+              icon: _isPaused ? Icons.play_arrow : Icons.pause,
+              onPressed: _togglePause,
+              color: Colors.white,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIconButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    required Color color,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.5),
+        shape: BoxShape.circle,
+      ),
+      child: IconButton(
+        icon: Icon(icon, color: color),
+        onPressed: onPressed,
+      ),
+    );
+  }
+
+  Widget _buildHUDOverlay(BuildContext context, EcoWarriorGame game) {
     return Padding(
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.all(20),
       child: Column(
         children: [
+          // Score et Timer
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildHudItem(
+              _HUDItem(
                 icon: Icons.star,
-                value: 'Score: ${game.score}',
-                iconColor: Colors.amber,
+                value: '${game.score}',
+                color: Colors.amber,
               ),
-              _buildHudItem(
+              _HUDItem(
                 icon: Icons.timer,
                 value: '${(game.timer ~/ 60).toString().padLeft(2, '0')}:${(game.timer % 60).toString().padLeft(2, '0')}',
-                iconColor: game.timer < 30 ? Colors.red : Colors.white,
-                valueColor: game.timer < 30 ? Colors.red : Colors.white,
+                color: game.timer < 30 ? Colors.red : Colors.white,
               ),
             ],
           ),
           const Spacer(),
+
+          // Indicateur de stage
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.6),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              'Stage ${widget.stage.stageNumber}: ${widget.stage.title}',
+              style: TextStyle(color: Colors.white, fontSize: 14),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildHudItem({
-    required IconData icon,
-    required String value,
-    required Color iconColor,
-    Color valueColor = Colors.white,
-  }) {
+  Widget _buildPauseOverlay(BuildContext context, EcoWarriorGame game) {
+    return _MenuOverlay(
+      title: 'JEU EN PAUSE',
+      subtitle: widget.stage.title,
+      buttons: [
+        _MenuButton(
+          icon: Icons.play_arrow,
+          text: 'REPRENDRE',
+          color: Colors.green,
+          onPressed: _togglePause,
+        ),
+        _MenuButton(
+          icon: Icons.refresh,
+          text: 'REDÉMARRER',
+          color: Colors.blue,
+          onPressed: _restartGame,
+        ),
+        _MenuButton(
+          icon: Icons.exit_to_app,
+          text: 'QUITTER',
+          color: Colors.red,
+          onPressed: _exitToMenu,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGameOverOverlay(BuildContext context, EcoWarriorGame game) {
+    return _MenuOverlay(
+      title: 'GAME OVER',
+      subtitle: 'Score: ${game.score}',
+      buttons: [
+        _MenuButton(
+          icon: Icons.refresh,
+          text: 'REESSAYER',
+          color: Colors.blue,
+          onPressed: _restartGame,
+        ),
+        _MenuButton(
+          icon: Icons.exit_to_app,
+          text: 'MENU',
+          color: Colors.red,
+          onPressed: _exitToMenu,
+        ),
+      ],
+    );
+  }
+}
+
+// Composants réutilisables
+class _HUDItem extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final Color color;
+
+  const _HUDItem({required this.icon, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
@@ -247,146 +288,65 @@ class _GameplayScreenState extends State<GameplayScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: iconColor, size: 20),
+          Icon(icon, color: color, size: 20),
           const SizedBox(width: 8),
-          Text(
-            value,
-            style: TextStyle(
-              color: valueColor,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Text(value, style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.bold)),
         ],
       ),
     );
   }
+}
 
-  Widget _buildPauseMenu() {
+class _MenuOverlay extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final List<Widget> buttons;
+
+  const _MenuOverlay({required this.title, required this.subtitle, required this.buttons});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       color: Colors.black.withOpacity(0.9),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              'JEU EN PAUSE',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
+            Text(title, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
             const SizedBox(height: 10),
-            Text(
-              'Stage ${widget.stage.stageNumber}: ${widget.stage.title}',
-              style: const TextStyle(
-                fontSize: 18,
-                color: Colors.white70,
-              ),
-            ),
+            Text(subtitle, style: const TextStyle(fontSize: 18, color: Colors.white70)),
             const SizedBox(height: 30),
-
-            _buildPauseButton(
-              icon: Icons.play_arrow,
-              text: 'REPRENDRE',
-              color: Colors.green,
-              onPressed: _togglePause,
-            ),
-            const SizedBox(height: 15),
-
-            _buildPauseButton(
-              icon: Icons.refresh,
-              text: 'REDÉMARRER',
-              color: Colors.blue,
-              onPressed: _restartGame,
-            ),
-            const SizedBox(height: 15),
-
-            _buildPauseButton(
-              icon: Icons.exit_to_app,
-              text: 'QUITTER',
-              color: Colors.red,
-              onPressed: _exitToMenu,
-            ),
+            ...buttons,
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildGameOverMenu() {
-    return Container(
-      color: Colors.black.withOpacity(0.9),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'GAME OVER',
-              style: TextStyle(
-                fontSize: 48,
-                fontWeight: FontWeight.bold,
-                color: Colors.red,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Score Final: ${game.score}',
-              style: const TextStyle(
-                fontSize: 24,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Stage: ${widget.stage.title}',
-              style: const TextStyle(
-                fontSize: 18,
-                color: Colors.white70,
-              ),
-            ),
-            const SizedBox(height: 30),
-            _buildPauseButton(
-              icon: Icons.refresh,
-              text: 'REESSAYER',
-              color: Colors.blue,
-              onPressed: _restartGame,
-            ),
-            const SizedBox(height: 15),
-            _buildPauseButton(
-              icon: Icons.exit_to_app,
-              text: 'MENU',
-              color: Colors.red,
-              onPressed: _exitToMenu,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+class _MenuButton extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final Color color;
+  final VoidCallback onPressed;
 
-  Widget _buildPauseButton({
-    required IconData icon,
-    required String text,
-    required Color color,
-    required VoidCallback onPressed,
-  }) {
+  const _MenuButton({required this.icon, required this.text, required this.color, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
     return SizedBox(
       width: 220,
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, size: 24),
-        label: Text(
-          text,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 15),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 15),
+        child: ElevatedButton.icon(
+          onPressed: onPressed,
+          icon: Icon(icon, size: 24),
+          label: Text(text, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: color,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 15),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
       ),
