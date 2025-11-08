@@ -51,10 +51,16 @@ flutter:
     - assets/images/objects/
     - assets/images/collectibles/
     - assets/images/powerups/
-    - assets/images/backgrounds/stage1/sky.png
-    - assets/images/backgrounds/stage1/land.png
-    - assets/images/backgrounds/stage1/sea.png
-    - assets/images/backgrounds/stage1/cloud.png
+    - assets/images/backgrounds/stage1/1.png
+    - assets/images/backgrounds/stage1/2.png
+    - assets/images/backgrounds/stage1/3.png
+    - assets/images/backgrounds/stage1/4.png
+    - assets/audio/music/stage1_music.mp3
+    - assets/audio/music/story_music.mp3
+    - assets/audio/sfx/button_click.mp3
+    - assets/audio/sfx/jump.mp3
+    - assets/audio/sfx/sword_attack.mp3
+    - assets/audio/sfx/flame_attack.mp3
 
     # Audio
     - assets/audio/

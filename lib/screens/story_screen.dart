@@ -22,6 +22,7 @@ class _StoryScreenState extends State<StoryScreen> with SingleTickerProviderStat
   bool _isTyping = false;
   bool _showContinueButton = false;
   Timer? _typingTimer;
+  bool _isDisposed = false;
 
   final List<String> _dialogues = [
     "Dans un monde écrasé par la pollution et le désespoir, un jeune homme nommé Mayo marche seul dans les rues de Tunisie. Ses cheveux noirs tombent sur son masque, qu'il porte pour se protéger de l'air toxique qui envahit la ville.",
@@ -52,6 +53,7 @@ class _StoryScreenState extends State<StoryScreen> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
+    _isDisposed = false;
 
     // Changer la musique pour l'histoire
     AudioManager().playMusic('story_music.mp3');
@@ -73,6 +75,8 @@ class _StoryScreenState extends State<StoryScreen> with SingleTickerProviderStat
   }
 
   void _startTyping() {
+    if (_isDisposed) return;
+
     if (_currentDialogue >= _dialogues.length) {
       _goToGameplay();
       return;
@@ -86,6 +90,11 @@ class _StoryScreenState extends State<StoryScreen> with SingleTickerProviderStat
     });
 
     _typingTimer = Timer.periodic(const Duration(milliseconds: 30), (timer) {
+      if (_isDisposed) {
+        timer.cancel();
+        return;
+      }
+
       if (_currentTextIndex < _dialogues[_currentDialogue].length) {
         setState(() {
           _displayText += _dialogues[_currentDialogue][_currentTextIndex];
@@ -98,15 +107,19 @@ class _StoryScreenState extends State<StoryScreen> with SingleTickerProviderStat
         });
       } else {
         timer.cancel();
-        setState(() {
-          _isTyping = false;
-          _showContinueButton = true;
-        });
+        if (!_isDisposed) {
+          setState(() {
+            _isTyping = false;
+            _showContinueButton = true;
+          });
+        }
       }
     });
   }
 
   void _nextDialogue() {
+    if (_isDisposed) return;
+
     AudioManager().playSfx('button_click.mp3');
 
     if (_currentDialogue < _dialogues.length - 1) {
@@ -120,11 +133,22 @@ class _StoryScreenState extends State<StoryScreen> with SingleTickerProviderStat
   }
 
   void _skipStory() {
+    if (_isDisposed) return;
+
     AudioManager().playSfx('button_click.mp3');
     _goToGameplay();
   }
 
   void _goToGameplay() {
+    if (_isDisposed) return;
+
+    // CORRECTION: Arrêter le timer de typing IMMÉDIATEMENT
+    _typingTimer?.cancel();
+    _typingTimer = null;
+
+    // CORRECTION: Arrêter la musique d'histoire
+    AudioManager().stopMusic();
+
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
@@ -140,8 +164,18 @@ class _StoryScreenState extends State<StoryScreen> with SingleTickerProviderStat
 
   @override
   void dispose() {
+    // CORRECTION: Marquer comme disposed pour éviter les setState après dispose
+    _isDisposed = true;
+
+    // CORRECTION: Arrêter le timer de typing IMMÉDIATEMENT
     _typingTimer?.cancel();
+    _typingTimer = null;
+
     _fadeController.dispose();
+
+    // CORRECTION: Arrêter la musique si l'écran est fermé
+    AudioManager().stopMusic();
+
     super.dispose();
   }
 

@@ -12,10 +12,10 @@ class ParallaxBackground extends Component {
     _parallax = await ParallaxComponent.load(
       [
         // Utilisez vos images existantes dans l'ordre de profondeur
-        ParallaxImageData('backgrounds/stage1/sky.png'),    // Nuages lointains
-        ParallaxImageData('backgrounds/stage1/land.png'),    // Nuages moyens
-        ParallaxImageData('backgrounds/stage1/sea.png'),    // Nuages proches
-        ParallaxImageData('backgrounds/stage1/cloud.png'),    // Mer et sable (premier plan)
+        ParallaxImageData('backgrounds/stage1/1.png'),    // Nuages lointains
+        ParallaxImageData('backgrounds/stage1/4.png'),    // Nuages moyens
+        ParallaxImageData('backgrounds/stage1/3.png'),    // Nuages proches
+        ParallaxImageData('backgrounds/stage1/2.png'),    // Mer et sable (premier plan)
       ],
       baseVelocity: Vector2(0, 0),
       // Ajustez les multiplicateurs de vitesse pour l'effet parallax
