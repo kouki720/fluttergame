@@ -191,13 +191,13 @@ class _GameplayScreenState extends State<GameplayScreen> {
             children: [
               _HUDItem(
                 icon: Icons.star,
-                value: '${game.score}',
+                value: '${game.currentScore}', // ✅ CORRECTION: currentScore
                 color: Colors.amber,
               ),
               _HUDItem(
                 icon: Icons.timer,
-                value: '${(game.timer ~/ 60).toString().padLeft(2, '0')}:${(game.timer % 60).toString().padLeft(2, '0')}',
-                color: game.timer < 30 ? Colors.red : Colors.white,
+                value: '${(game.gameTimer ~/ 60).toString().padLeft(2, '0')}:${(game.gameTimer % 60).toString().padLeft(2, '0')}', // ✅ CORRECTION: gameTimer
+                color: game.gameTimer < 30 ? Colors.red : Colors.white, // ✅ CORRECTION: gameTimer
               ),
             ],
           ),
@@ -250,7 +250,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
   Widget _buildGameOverOverlay(BuildContext context, EcoWarriorGame game) {
     return _MenuOverlay(
       title: 'GAME OVER',
-      subtitle: 'Score: ${game.score}',
+      subtitle: 'Score: ${game.currentScore}', // ✅ CORRECTION: currentScore
       buttons: [
         _MenuButton(
           icon: Icons.refresh,

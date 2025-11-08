@@ -72,6 +72,20 @@ flutter:
     - assets/audio/sfx/flame_attack.mp3
     - assets/audio/sfx/power_up.mp3
     - assets/audio/sfx/keyboard_typing.mp3
+    - assets/images/player/idle.png
+    - assets/images/player/run.png
+    - assets/images/player/jump.png
+    - assets/images/player/attack.png
+    - assets/images/player/hurt.png
 
+    # Flame attack
+    - assets/images/attacks/flame/flamerouge.png
+    - assets/images/attacks/flame/flame1.png
+    - assets/images/attacks/flame/flame2.png
+    - assets/images/attacks/flame/flame3.png
+    - assets/images/attacks/flame/flame4.png
+    - assets/images/attacks/flame/flame6.png
+    - assets/images/attacks/flame/flame5.png
+    - assets/images/attacks/flame/flame6.png
     # Data
     - assets/data/

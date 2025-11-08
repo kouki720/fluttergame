@@ -162,34 +162,9 @@ class GameJoystickComponent extends PositionComponent with TapCallbacks, HasGame
     onDirectionChanged(GameJoystickDirection.idle);
   }
 
-  // Méthode de rendu pour le débogage visuel
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-
-    // Dessiner les zones de débogage (optionnel)
-    _drawDebugInfo(canvas);
-  }
-
-  void _drawDebugInfo(Canvas canvas) {
-    final textPainter = TextPainter(textDirection: TextDirection.ltr);
-
-    // Afficher la position des boutons pour débogage
-    final debugText = '''
-Boutons Joystick:
-- Gauche: ${_leftButton.position}
-- Droite: ${_rightButton.position}
-- Jump: ${_jumpButton.position}
-- Sword: ${_swordButton.position}
-- Flame: ${_flameButton.position}
-''';
-
-    textPainter.text = TextSpan(
-      text: debugText,
-      style: TextStyle(color: Colors.white, fontSize: 10),
-    );
-
-    textPainter.layout();
-    textPainter.paint(canvas, Offset(10, 100));
+    // Le texte de débogage a été supprimé - plus d'écriture blanche
   }
 }
