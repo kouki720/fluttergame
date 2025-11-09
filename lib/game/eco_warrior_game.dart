@@ -6,16 +6,18 @@ import 'parallax_background.dart';
 import '../components/ui/joystick.dart';
 import '../components/player/player.dart';
 import '../managers/audio_manager.dart';
+import '../managers/enemy_manager.dart';
 
 class EcoWarriorGame extends FlameGame with HasCollisionDetection {
   // Composants du jeu
   late final ParallaxBackground parallaxBackground;
   late final GameJoystickComponent joystick;
   late final Player player;
+  late final EnemyManager enemyManager;
 
   // État du jeu
   int _score = 0;
-  int _gameTimer = 180; // ✅ CORRECTION: Renommé pour éviter le conflit
+  int _gameTimer = 180;
   bool isGameRunning = true;
   double _timeAccumulator = 0.0;
 
@@ -33,18 +35,22 @@ class EcoWarriorGame extends FlameGame with HasCollisionDetection {
 
     print('🎮 Initialisation du jeu EcoWarrior avec Flame 1.33.0...');
 
-    // Charger les composants en parallèle
-    await Future.wait([
-      _loadParallaxBackground(),
-      _loadPlayer(),
-      _loadJoystick(),
-    ]);
+    // Initialiser l'audio manager
+    AudioManager();
+
+    // Charger les composants dans l'ordre
+    await _loadParallaxBackground();
+    await _loadPlayer();
+    await _loadJoystick();
+    await _loadEnemyManager();
 
     // Activer le HUD
     overlays.add('hudOverlay');
 
     print('✅ Jeu initialisé avec ${children.length} composants');
     print('📏 Taille de l\'écran: $size');
+    print('🎮 Position joueur: ${player.position}');
+    print('👹 Nombre d\'ennemis: ${enemyManager.enemyCount}');
   }
 
   Future<void> _loadParallaxBackground() async {
@@ -55,7 +61,7 @@ class EcoWarriorGame extends FlameGame with HasCollisionDetection {
 
   Future<void> _loadPlayer() async {
     player = Player(
-      position: Vector2(size.x / 4, size.y - 150), // Position de départ
+      position: Vector2(size.x / 4, size.y - 150),
     );
     await add(player);
     print('🎮 Joueur chargé à la position: ${player.position}');
@@ -71,6 +77,19 @@ class EcoWarriorGame extends FlameGame with HasCollisionDetection {
     print('🕹️ Joystick chargé');
   }
 
+  Future<void> _loadEnemyManager() async {
+    enemyManager = EnemyManager();
+    await add(enemyManager);
+
+    // Attendre que tout soit chargé avant de générer les ennemis
+    await Future.delayed(Duration(milliseconds: 200));
+
+    // Générer les ennemis pour le stage 1
+    enemyManager.spawnEnemiesForStage(1, size);
+
+    print('👹 EnemyManager chargé avec ${enemyManager.enemyCount} ennemis');
+  }
+
   void _handleDirectionChange(GameJoystickDirection direction) {
     if (!isGameRunning) return;
 
@@ -78,17 +97,14 @@ class EcoWarriorGame extends FlameGame with HasCollisionDetection {
       case GameJoystickDirection.left:
         player.setMovementDirection(-1.0);
         parallaxBackground.updateParallax(direction);
-        print('⬅️ Déplacement vers la GAUCHE activé');
         break;
       case GameJoystickDirection.right:
         player.setMovementDirection(1.0);
         parallaxBackground.updateParallax(direction);
-        print('➡️ Déplacement vers la DROITE activé');
         break;
       case GameJoystickDirection.idle:
         player.setMovementDirection(0.0);
         parallaxBackground.updateParallax(direction);
-        print('⏹️ Déplacement arrêté - IDLE');
         break;
       case GameJoystickDirection.jump:
       // Géré séparément dans _handleJump
@@ -98,7 +114,6 @@ class EcoWarriorGame extends FlameGame with HasCollisionDetection {
 
   void _handleJump() {
     if (!isGameRunning) return;
-
     player.jump();
   }
 
@@ -115,11 +130,90 @@ class EcoWarriorGame extends FlameGame with HasCollisionDetection {
     }
   }
 
+  @override
+  void update(double dt) {
+    super.update(dt);
+
+    if (!isGameRunning) return;
+
+    // Mettre à jour la position du joueur pour l'EnemyManager
+    enemyManager.updatePlayerPosition(player.position);
+
+    // Mise à jour du timer
+    if (_gameTimer > 0) {
+      _timeAccumulator += dt;
+      if (_timeAccumulator >= 1.0) {
+        _timeAccumulator = 0.0;
+        _gameTimer--;
+        onTimeUpdate?.call();
+
+        if (_gameTimer <= 0) {
+          _handleTimeOut();
+        }
+      }
+    }
+
+    // Limites de l'écran pour le joueur
+    _checkPlayerBounds();
+  }
+
+  void _checkPlayerBounds() {
+    // Empêcher le joueur de sortir de l'écran
+    final halfPlayerWidth = player.size.x / 2;
+
+    if (player.position.x < halfPlayerWidth) {
+      player.position.x = halfPlayerWidth;
+    } else if (player.position.x > size.x - halfPlayerWidth) {
+      player.position.x = size.x - halfPlayerWidth;
+    }
+  }
+
+  void _handleTimeOut() {
+    print('⏰ TEMPS ÉCOULÉ! Game Over!');
+    isGameRunning = false;
+    onGameOver?.call();
+    overlays.add('gameOverOverlay');
+  }
+
+  void resetGame() {
+    // Réinitialiser l'état du jeu
+    _score = 0;
+    _gameTimer = 180;
+    isGameRunning = true;
+    _timeAccumulator = 0.0;
+
+    // Réinitialiser le joueur
+    player.position = Vector2(size.x / 4, size.y - 150);
+    player.setMovementDirection(0.0);
+    player.current = PlayerState.idle;
+
+    // Réinitialiser les ennemis
+    enemyManager.clearAllEnemies();
+    enemyManager.spawnEnemiesForStage(1, size);
+
+    // Réinitialiser le parallax
+    parallaxBackground.updateParallax(GameJoystickDirection.idle);
+
+    // Réinitialiser les overlays
+    overlays
+      ..clear()
+      ..add('hudOverlay');
+
+    // Reprendre le moteur
+    resumeEngine();
+
+    // Notifier l'UI
+    onTimeUpdate?.call();
+    onScoreUpdate?.call();
+
+    print('🔄 Jeu RÉINITIALISÉ - Timer: $_gameTimer secondes, Score: $_score');
+  }
+
+  // Méthodes utilitaires
   void addScore(int points) {
     _score += points;
     print('🎯 Score augmenté: $_score (+$points)');
     onScoreUpdate?.call();
-    onTimeUpdate?.call();
   }
 
   void pauseGame() {
@@ -140,76 +234,6 @@ class EcoWarriorGame extends FlameGame with HasCollisionDetection {
     print('▶️ Jeu REPRIS');
   }
 
-  @override
-  void update(double dt) {
-    super.update(dt);
-
-    // Mise à jour du timer
-    if (isGameRunning && _gameTimer > 0) {
-      _timeAccumulator += dt;
-      if (_timeAccumulator >= 1.0) {
-        _timeAccumulator = 0.0;
-        _gameTimer--;
-        onTimeUpdate?.call();
-
-        print('⏰ Timer: ${_gameTimer ~/ 60}:${(_gameTimer % 60).toString().padLeft(2, '0')}');
-
-        if (_gameTimer <= 0) {
-          _handleTimeOut();
-        }
-      }
-    }
-
-    // Limites de l'écran pour le joueur
-    _checkPlayerBounds();
-  }
-
-  void _checkPlayerBounds() {
-    // Empêcher le joueur de sortir de l'écran
-    if (player.position.x < 0) {
-      player.position.x = 0;
-    } else if (player.position.x > size.x - player.size.x) {
-      player.position.x = size.x - player.size.x;
-    }
-  }
-
-  void _handleTimeOut() {
-    print('⏰ TEMPS ÉCOULÉ! Game Over!');
-    isGameRunning = false;
-    onGameOver?.call();
-    overlays.add('gameOverOverlay');
-  }
-
-  void resetGame() {
-    // Réinitialiser l'état du jeu
-    _score = 0;
-    _gameTimer = 180;
-    isGameRunning = true;
-    _timeAccumulator = 0.0;
-
-    // Réinitialiser le joueur
-    player.position = Vector2(size.x / 4, size.y - 100);
-    player.setMovementDirection(0.0);
-    player.current = PlayerState.idle;
-
-    // Réinitialiser le parallax
-    parallaxBackground.updateParallax(GameJoystickDirection.idle);
-
-    // Réinitialiser les overlays
-    overlays
-      ..clear()
-      ..add('hudOverlay');
-
-    // Reprendre le moteur
-    resumeEngine();
-
-    // Notifier l'UI
-    onTimeUpdate?.call();
-
-    print('🔄 Jeu RÉINITIALISÉ - Timer: $_gameTimer secondes');
-  }
-
-  // Méthodes utilitaires
   void addTime(int seconds) {
     _gameTimer += seconds;
     onTimeUpdate?.call();
@@ -234,11 +258,6 @@ class EcoWarriorGame extends FlameGame with HasCollisionDetection {
     overlays.add('victoryOverlay');
   }
 
-  // Gestion des collisions (à implémenter plus tard)
-  void _checkCollisions() {
-    // À implémenter avec les ennemis et collectibles
-  }
-
   @override
   void onMount() {
     super.onMount();
@@ -251,9 +270,10 @@ class EcoWarriorGame extends FlameGame with HasCollisionDetection {
     super.onRemove();
   }
 
-  // ✅ CORRECTION: Getters renommés pour éviter les conflits
+  // Getters
   int get currentScore => _score;
-  int get gameTimer => _gameTimer; // ✅ Renommé pour éviter le conflit
+  int get gameTimer => _gameTimer;
   bool get gameRunning => isGameRunning;
-  Player get playerRef => player; // Getter pour accéder au joueur
+  Player get playerRef => player;
+  EnemyManager get enemyManagerRef => enemyManager;
 }

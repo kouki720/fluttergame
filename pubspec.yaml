@@ -87,5 +87,9 @@ flutter:
     - assets/images/attacks/flame/flame6.png
     - assets/images/attacks/flame/flame5.png
     - assets/images/attacks/flame/flame6.png
+    - assets/images/enemies/
+    - assets/images/enemies/plastic_monster/
+    - assets/images/enemies/toxic_slime/
+
     # Data
     - assets/data/
