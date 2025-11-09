@@ -34,6 +34,15 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
   // Référence au game manager
   final GameManager _gameManager = GameManager();
 
+  // Système de santé et dégâts
+  double _currentHealth = 100.0;
+  double _maxHealth = 100.0;
+  double _swordDamage = 15.0;
+  double _flameDamage = 25.0;
+
+  // Composant de la barre de santé
+  late final HealthBar _healthBar;
+
   // ✅ CORRECTION: Taille augmentée encore (192x192)
   Player({Vector2? position}) : super(
       position: position ?? Vector2(100, 300),
@@ -59,7 +68,16 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
 
     current = PlayerState.idle;
 
+    // ✅ CORRECTION: Position de la barre de santé ajustée - PLUS BASSE
+    _healthBar = HealthBar(
+      player: this,
+      position: Vector2(0, -size.y / 3), // ✅ Beaucoup plus bas
+    );
+    await add(_healthBar);
+
     print('🎮 Joueur initialisé à la position: $position, taille: $size');
+    print('❤️ Santé: $_currentHealth/$_maxHealth');
+    print('⚔️ Dégâts épée: $_swordDamage, 🔥 Dégâts flamme: $_flameDamage');
   }
 
   Future<void> _loadAnimations() async {
@@ -165,6 +183,9 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
 
     // Limites de l'écran
     _checkScreenBounds();
+
+    // ✅ CORRECTION: Mettre à jour la position avec la nouvelle valeur
+    _healthBar.position = Vector2(0, -size.y / 3);
   }
 
   void _applyPhysics(double dt) {
@@ -228,7 +249,10 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
     current = PlayerState.attacking;
     AudioManager().playSwordAttackSfx();
 
-    print('⚔️ Attaque épée! Position: $position');
+    print('⚔️ Attaque épée! Dégâts: $_swordDamage, Position: $position');
+
+    // Appliquer les dégâts de l'épée aux ennemis proches
+    _applySwordDamage();
 
     _attackCooldownTimer = TimerComponent(
       period: 0.5,
@@ -247,9 +271,9 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
     _isAttacking = true;
     AudioManager().playFlameAttackSfx();
 
-    print('🎯 Début attaque flamme... Position: $position, Direction: ${isFacingRight ? "droite" : "gauche"}');
+    print('🎯 Début attaque flamme... Dégâts: $_flameDamage, Position: $position, Direction: ${isFacingRight ? "droite" : "gauche"}');
 
-    // Créer la flamme rouge
+    // Créer la flamme rouge avec les dégâts
     _spawnFlameAttack();
 
     print('🔥 Attaque flamme lancée!');
@@ -275,23 +299,46 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
     final flame = FlameAttack(
       position: flamePosition,
       direction: isFacingRight ? 1 : -1,
+      // ✅ CORRECTION: Retirer le paramètre damage qui n'existe pas
     );
 
     gameRef.add(flame);
-    print('🔥 Flamme créée à: $flamePosition, Direction: ${isFacingRight ? "droite" : "gauche"}');
+    print('🔥 Flamme créée à: $flamePosition, Dégâts: $_flameDamage, Direction: ${isFacingRight ? "droite" : "gauche"}');
   }
 
-  void takeDamage(int damage) {
-    _gameManager.playerStats.currentHealth -= damage.toDouble();
+  void _applySwordDamage() {
+    // TODO: Implémenter la détection des ennemis proches pour l'attaque à l'épée
+    // Pour l'instant, on loggue seulement l'action
+    print('⚔️ Application des dégâts d\'épée: $_swordDamage');
+
+    // Exemple de détection d'ennemis dans une zone
+    final attackRange = isFacingRight ?
+    Vector2(position.x + size.x / 2, position.y - size.y / 2) :
+    Vector2(position.x - size.x / 2, position.y - size.y / 2);
+
+    print('🎯 Zone d\'attaque épée: $attackRange');
+  }
+
+  void takeDamage(double damage) {
+    _currentHealth -= damage;
+    _currentHealth = _currentHealth.clamp(0, _maxHealth);
     current = PlayerState.hurt;
 
-    print('💥 Joueur touché! PV: ${_gameManager.playerStats.currentHealth}');
+    print('💥 Joueur touché! Dégâts: $damage, PV: $_currentHealth/$_maxHealth');
+
+    // Effet visuel de dégâts
+    _showDamageEffect(damage);
+
+    // Vérifier si le joueur est mort
+    if (_currentHealth <= 0) {
+      _die();
+    }
 
     final damageTimer = TimerComponent(
       period: 0.5,
       removeOnFinish: true,
       onTick: () {
-        if (_gameManager.playerStats.currentHealth > 0) {
+        if (_currentHealth > 0) {
           _updatePlayerState();
         }
       },
@@ -299,9 +346,46 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
     add(damageTimer);
   }
 
+  void _showDamageEffect(double damage) {
+    // TODO: Ajouter un effet visuel pour les dégâts reçus
+    // Par exemple, faire clignoter le joueur en rouge
+    print('💢 Effet de dégâts: $damage points');
+  }
+
+  void _die() {
+    print('💀 Joueur mort!');
+    current = PlayerState.hurt;
+    // TODO: Implémenter la logique de mort (game over, etc.)
+  }
+
+  void heal(double amount) {
+    _currentHealth += amount;
+    _currentHealth = _currentHealth.clamp(0, _maxHealth);
+    print('❤️ Soin reçu: +$amount, PV: $_currentHealth/$_maxHealth');
+  }
+
+  void increaseMaxHealth(double amount) {
+    _maxHealth += amount;
+    _currentHealth += amount;
+    print('❤️ Santé maximale augmentée: $_maxHealth, PV: $_currentHealth/$_maxHealth');
+  }
+
+  void upgradeSwordDamage(double increase) {
+    _swordDamage += increase;
+    print('⚔️ Dégâts épée améliorés: $_swordDamage');
+  }
+
+  void upgradeFlameDamage(double increase) {
+    _flameDamage += increase;
+    print('🔥 Dégâts flamme améliorés: $_flameDamage');
+  }
+
   // Getters pour les statistiques
-  double get currentHealth => _gameManager.playerStats.currentHealth;
-  double get maxHealth => _gameManager.playerStats.maxHealth;
+  double get currentHealth => _currentHealth;
+  double get maxHealth => _maxHealth;
+  double get swordDamage => _swordDamage;
+  double get flameDamage => _flameDamage;
+  double get healthPercentage => _currentHealth / _maxHealth;
   int get coins => _gameManager.playerStats.coins;
 
   @override
@@ -309,5 +393,78 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
     _attackCooldownTimer?.removeFromParent();
     print('🗑️ Joueur démonté');
     super.onRemove();
+  }
+}
+
+// Composant pour la barre de santé
+class HealthBar extends PositionComponent {
+  final Player player;
+  final double width = 80.0;
+  final double height = 8.0;
+
+  HealthBar({
+    required this.player,
+    required Vector2 position,
+  }) : super(position: position);
+
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+
+    // Barre de fond (noire)
+    final backgroundRect = Rect.fromLTWH(-width / 2, -height / 2, width, height);
+    canvas.drawRect(
+      backgroundRect,
+      Paint()..color = Colors.black.withOpacity(0.8),
+    );
+
+    // Barre de santé (verte/rouge selon les PV)
+    final healthWidth = width * player.healthPercentage;
+    final healthColor = player.healthPercentage > 0.5
+        ? Colors.green
+        : player.healthPercentage > 0.25
+        ? Colors.orange
+        : Colors.red;
+
+    final healthRect = Rect.fromLTWH(-width / 2, -height / 2, healthWidth, height);
+    canvas.drawRect(
+      healthRect,
+      Paint()..color = healthColor,
+    );
+
+    // Bordure
+    final borderRect = Rect.fromLTWH(-width / 2, -height / 2, width, height);
+    canvas.drawRect(
+      borderRect,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0,
+    );
+
+    // Texte des PV (optionnel)
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: '${player.currentHealth.toInt()}/${player.maxHealth.toInt()}',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 8,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+    textPainter.paint(
+      canvas,
+      Offset(-textPainter.width / 2, -height - 12),
+    );
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    // ✅ CORRECTION: Suivre le joueur avec la nouvelle position
+    position = Vector2(0, -player.size.y / 3);
   }
 }
