@@ -38,6 +38,9 @@ class EcoWarriorGame extends FlameGame with HasCollisionDetection {
     // Initialiser l'audio manager
     AudioManager();
 
+    // ✅ CORRECTION: Initialiser le callback Game Over
+    onGameOver = _handleGameOver;
+
     // Charger les composants dans l'ordre
     await _loadParallaxBackground();
     await _loadPlayer();
@@ -170,12 +173,31 @@ class EcoWarriorGame extends FlameGame with HasCollisionDetection {
 
   void _handleTimeOut() {
     print('⏰ TEMPS ÉCOULÉ! Game Over!');
+    _handleGameOver();
+  }
+
+  // ✅ CORRECTION: Méthode Game Over complète
+  void _handleGameOver() {
+    if (!isGameRunning) return;
+
+    print('💀 GAME OVER - Affichage overlay');
     isGameRunning = false;
-    onGameOver?.call();
+
+    // Arrêter la musique
+    AudioManager().stopMusic();
+
+    // Afficher l'overlay game over
     overlays.add('gameOverOverlay');
+
+    // Pause le jeu
+    pauseEngine();
+
+    print('🎮 Jeu en pause, overlay Game Over affiché');
   }
 
   void resetGame() {
+    print('🔄 Réinitialisation du jeu...');
+
     // Réinitialiser l'état du jeu
     _score = 0;
     _gameTimer = 180;
@@ -185,7 +207,7 @@ class EcoWarriorGame extends FlameGame with HasCollisionDetection {
     // Réinitialiser le joueur
     player.position = Vector2(size.x / 4, size.y - 150);
     player.setMovementDirection(0.0);
-    player.current = PlayerState.idle;
+    player.resetHealth(); // ✅ IMPORTANT: Reset la santé du joueur
 
     // Réinitialiser les ennemis
     enemyManager.clearAllEnemies();
@@ -199,14 +221,15 @@ class EcoWarriorGame extends FlameGame with HasCollisionDetection {
       ..clear()
       ..add('hudOverlay');
 
-    // Reprendre le moteur
+    // Reprendre le moteur et la musique
     resumeEngine();
+    AudioManager().playMusic('stage1_music.mp3');
 
     // Notifier l'UI
     onTimeUpdate?.call();
     onScoreUpdate?.call();
 
-    print('🔄 Jeu RÉINITIALISÉ - Timer: $_gameTimer secondes, Score: $_score');
+    print('✅ Jeu RÉINITIALISÉ - Timer: $_gameTimer secondes, Score: $_score');
   }
 
   // Méthodes utilitaires
@@ -222,6 +245,7 @@ class EcoWarriorGame extends FlameGame with HasCollisionDetection {
     isGameRunning = false;
     overlays.add('pauseOverlay');
     pauseEngine();
+    AudioManager().pauseMusic();
     print('⏸️ Jeu mis en PAUSE');
   }
 
@@ -231,6 +255,7 @@ class EcoWarriorGame extends FlameGame with HasCollisionDetection {
     isGameRunning = true;
     overlays.remove('pauseOverlay');
     resumeEngine();
+    AudioManager().resumeMusic();
     print('▶️ Jeu REPRIS');
   }
 
@@ -267,6 +292,7 @@ class EcoWarriorGame extends FlameGame with HasCollisionDetection {
   @override
   void onRemove() {
     print('🗑️ Jeu démonté');
+    AudioManager().stopMusic();
     super.onRemove();
   }
 

@@ -19,33 +19,15 @@ class EnemyManager extends Component with HasGameRef<EcoWarriorGame> {
 
     for (final enemy in _activeEnemies) {
       enemy.updatePlayerPosition(_playerPosition!);
-
-      // ✅ CORRECTION: Vérifier si l'ennemi attaque ET si le joueur est proche
-      if (enemy.current == EnemyState.attacking) {
-        _checkPlayerCollision(enemy);
-      }
     }
 
-    // ✅ CORRECTION: Nettoyer les ennemis morts
     _cleanupDeadEnemies();
   }
 
-  void _checkPlayerCollision(Enemy enemy) {
-    if (_playerPosition == null) return;
-
-    final distance = (_playerPosition! - enemy.position).length;
-    if (distance <= enemy.attackRange) {
-      // Le joueur prend des dégâts
-      gameRef.player.takeDamage(enemy.damage);
-    }
-  }
-
   void spawnEnemiesForStage(int stageNumber, Vector2 levelSize) {
-    if (_currentStage == stageNumber) {
-      return;
-    }
+    if (_currentStage == stageNumber) return;
 
-    print('🎯 Génération des ennemis pour le stage $stageNumber...');
+    print('🎯 Génération ennemis stage $stageNumber...');
     _clearAllEnemies();
     _currentStage = stageNumber;
 
@@ -59,22 +41,13 @@ class EnemyManager extends Component with HasGameRef<EcoWarriorGame> {
   }
 
   void _spawnStage1Enemies(Vector2 levelSize) {
-    print('👹 Création des ennemis Stage 1...');
-
-    // ✅ POSITIONS ORIGINALES
     final plasticMonster = PlasticMonster(
-        position: Vector2(
-          10.0,
-          levelSize.y - 30.0,
-        )
+        position: Vector2(levelSize.x * 0.7, levelSize.y - 30.0)
     );
     _spawnEnemy(plasticMonster);
 
     final toxicSlime = ToxicSlime(
-        position: Vector2(
-          10.0,
-          levelSize.y - 30.0,
-        )
+        position: Vector2(levelSize.x * 0.3, levelSize.y - 30.0)
     );
     _spawnEnemy(toxicSlime);
 
@@ -84,7 +57,6 @@ class EnemyManager extends Component with HasGameRef<EcoWarriorGame> {
   void _spawnEnemy(Enemy enemy) {
     gameRef.add(enemy);
     _activeEnemies.add(enemy);
-    print('👹 ${enemy.runtimeType} spawné à: ${enemy.position}');
   }
 
   void _clearAllEnemies() {
@@ -93,23 +65,15 @@ class EnemyManager extends Component with HasGameRef<EcoWarriorGame> {
     }
     _activeEnemies.clear();
     _currentStage = -1;
-    print('🗑️ Tous les ennemis nettoyés');
   }
 
-  // ✅ CORRECTION: Nettoyer les ennemis morts
   void _cleanupDeadEnemies() {
     final deadEnemies = _activeEnemies.where((enemy) => !enemy.isAlive).toList();
-
     for (final enemy in deadEnemies) {
       _activeEnemies.remove(enemy);
     }
-
-    if (deadEnemies.isNotEmpty) {
-      print('🧹 ${deadEnemies.length} ennemi(s) mort(s) nettoyé(s)');
-    }
   }
 
-  // Méthode pour que le joueur attaque les ennemis
   void playerAttacksEnemies(Vector2 attackPosition, double attackRange, double damage) {
     int enemiesHit = 0;
 
@@ -122,7 +86,7 @@ class EnemyManager extends Component with HasGameRef<EcoWarriorGame> {
     }
 
     if (enemiesHit > 0) {
-      print('🎯 $enemiesHit ennemi(s) touché(s) par l\'attaque');
+      print('🎯 $enemiesHit ennemi(s) touché(s)');
     }
   }
 
@@ -138,10 +102,8 @@ class EnemyManager extends Component with HasGameRef<EcoWarriorGame> {
     _clearAllEnemies();
   }
 
-  // ✅ CORRECTION: Méthode pour reset tous les ennemis
   void resetEnemies(Vector2 levelSize) {
     _clearAllEnemies();
     spawnEnemiesForStage(1, levelSize);
-    print('🔄 Ennemis réinitialisés');
   }
 }

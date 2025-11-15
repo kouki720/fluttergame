@@ -7,10 +7,9 @@ import 'package:eco_warrior_tunisia1/managers/game_manager.dart';
 import '../attacks/flame_attack.dart';
 import '../../game/eco_warrior_game.dart';
 
-enum PlayerState { idle, running, jumping, attacking, hurt }
+enum PlayerState { idle, running, jumping, attacking, hurt, dead }
 
 class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef<EcoWarriorGame> {
-  // État et propriétés du joueur
   bool isFacingRight = true;
   double moveSpeed = 200.0;
   bool isOnGround = true;
@@ -27,6 +26,7 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef<
   late final SpriteAnimation _jumpAnimation;
   late final SpriteAnimation _attackAnimation;
   late final SpriteAnimation _hurtAnimation;
+  late final SpriteAnimation _deadAnimation;
 
   // Gestion des attaques
   bool _isAttacking = false;
@@ -44,6 +44,11 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef<
   // Composant de la barre de santé
   late final HealthBar _healthBar;
 
+  // Timer d'invulnérabilité après dégâts
+  bool _isInvulnerable = false;
+  TimerComponent? _invulnerabilityTimer;
+  TimerComponent? _hurtAnimationTimer;
+
   Player({Vector2? position}) : super(
       position: position ?? Vector2(100, 300),
       size: Vector2(192, 192)
@@ -54,24 +59,21 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef<
     await super.onLoad();
     anchor = Anchor.bottomCenter;
 
-    // ✅ CORRECTION: Réinitialiser la santé à 100
     _currentHealth = 100.0;
 
-    // Charger toutes les animations
     await _loadAnimations();
 
-    // Définir les animations par état
     animations = {
       PlayerState.idle: _idleAnimation,
       PlayerState.running: _runAnimation,
       PlayerState.jumping: _jumpAnimation,
       PlayerState.attacking: _attackAnimation,
       PlayerState.hurt: _hurtAnimation,
+      PlayerState.dead: _deadAnimation,
     };
 
     current = PlayerState.idle;
 
-    // Barre de santé
     _healthBar = HealthBar(
       player: this,
       position: Vector2(0, -size.y / 3),
@@ -138,22 +140,35 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef<
         ),
       );
 
+      // Animation Mort
+      final deadImage = await gameRef.images.load('player/dead.png');
+      _deadAnimation = SpriteAnimation.fromFrameData(
+        deadImage,
+        SpriteAnimationData.sequenced(
+          amount: 6,
+          textureSize: Vector2(64, 64),
+          stepTime: 0.15,
+          loop: false, // IMPORTANT: ne pas boucler l'animation de mort
+        ),
+      );
+
       print('✅ Toutes les animations joueur chargées');
 
     } catch (e) {
       print('❌ Erreur chargement animations joueur: $e');
+      // Fallback pour l'animation de mort
+      _deadAnimation = _hurtAnimation;
     }
   }
 
   void setMovementDirection(double direction) {
-    if (_isAttacking) {
+    if (_isAttacking || current == PlayerState.hurt || current == PlayerState.dead) {
       _velocityX = 0.0;
       return;
     }
 
     _velocityX = direction * moveSpeed;
 
-    // Gestion de la direction
     if (direction != 0) {
       final newDirection = direction > 0;
       if (newDirection != isFacingRight) {
@@ -167,35 +182,33 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef<
   void update(double dt) {
     super.update(dt);
 
-    // Appliquer la gravité et le saut
+    // Si mort, ne rien faire
+    if (current == PlayerState.dead) {
+      _velocityX = 0.0;
+      return;
+    }
+
     _applyPhysics(dt);
-
-    // Déplacement horizontal
     position.x += _velocityX * dt;
-
-    // Vérifier les collisions avec le sol
     _checkGroundCollision();
 
-    // Changement d'état
-    _updatePlayerState();
+    // CORRECTION: Mettre à jour l'état seulement si pas en train de prendre des dégâts
+    if (current != PlayerState.hurt) {
+      _updatePlayerState();
+    }
 
-    // Limites de l'écran
     _checkScreenBounds();
-
-    // Mettre à jour la position de la barre de santé
     _healthBar.position = Vector2(0, -size.y / 3);
   }
 
   void _applyPhysics(double dt) {
     if (!isOnGround) {
-      // Appliquer la gravité
       _jumpVelocity += _gravity * dt;
       position.y += _jumpVelocity * dt;
     }
   }
 
   void _checkGroundCollision() {
-    // Position originale
     final groundLevel = gameRef.size.y - 0;
 
     if (position.y >= groundLevel) {
@@ -208,7 +221,6 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef<
   }
 
   void _checkScreenBounds() {
-    // Empêcher le joueur de sortir de l'écran
     if (position.x < size.x / 2) {
       position.x = size.x / 2;
     } else if (position.x > gameRef.size.x - size.x / 2) {
@@ -217,7 +229,9 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef<
   }
 
   void _updatePlayerState() {
-    if (_isAttacking) return;
+    if (_isAttacking || current == PlayerState.hurt || current == PlayerState.dead) {
+      return;
+    }
 
     if (!isOnGround) {
       current = PlayerState.jumping;
@@ -229,27 +243,25 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef<
   }
 
   void jump() {
-    if (!isOnGround || _isAttacking) return;
+    if (!isOnGround || _isAttacking || current == PlayerState.hurt || current == PlayerState.dead) {
+      return;
+    }
 
-    // Appliquer une force de saut réelle
     isOnGround = false;
     _jumpVelocity = _jumpForce;
     current = PlayerState.jumping;
     AudioManager().playJumpSfx();
-
-    print('🦘 Joueur saute!');
   }
 
   void swordAttack() {
-    if (_isAttacking) return;
+    if (_isAttacking || current == PlayerState.hurt || current == PlayerState.dead) {
+      return;
+    }
 
     _isAttacking = true;
     current = PlayerState.attacking;
     AudioManager().playSwordAttackSfx();
 
-    print('⚔️ Attaque épée! Dégâts: $_swordDamage');
-
-    // Appliquer les dégâts de l'épée aux ennemis proches
     _applySwordDamage();
 
     _attackCooldownTimer = TimerComponent(
@@ -264,14 +276,13 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef<
   }
 
   void flameAttack() {
-    if (_isAttacking) return;
+    if (_isAttacking || current == PlayerState.hurt || current == PlayerState.dead) {
+      return;
+    }
 
     _isAttacking = true;
     AudioManager().playFlameAttackSfx();
 
-    print('🔥 Attaque flamme! Dégâts: $_flameDamage');
-
-    // Créer la flamme rouge avec les dégâts
     _spawnFlameAttack();
 
     _attackCooldownTimer = TimerComponent(
@@ -297,13 +308,9 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef<
     );
 
     gameRef.add(flame);
-    print('🔥 Flamme créée');
   }
 
   void _applySwordDamage() {
-    print('⚔️ Application des dégâts d\'épée: $_swordDamage');
-
-    // Appeler l'EnemyManager pour appliquer les dégâts
     gameRef.enemyManager.playerAttacksEnemies(
       position,
       100.0,
@@ -311,45 +318,66 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef<
     );
   }
 
+  // CORRECTION COMPLÈTE: Prendre des dégâts
   void takeDamage(double damage) {
-    // ✅ CORRECTION: Éviter les dégâts multiples si déjà mort
-    if (_currentHealth <= 0) return;
+    if (_currentHealth <= 0 || _isInvulnerable || current == PlayerState.dead) {
+      return;
+    }
 
     _currentHealth -= damage;
     _currentHealth = _currentHealth.clamp(0, _maxHealth);
-    current = PlayerState.hurt;
 
     print('💥 Joueur touché! Dégâts: $damage, PV: $_currentHealth/$_maxHealth');
 
     if (_currentHealth <= 0) {
       _die();
     } else {
-      final damageTimer = TimerComponent(
-        period: 0.5,
+      // Animation de dégâts
+      current = PlayerState.hurt;
+      _isInvulnerable = true;
+
+      // Timer pour l'animation de dégâts (court)
+      _hurtAnimationTimer = TimerComponent(
+        period: 0.6, // Durée de l'animation hurt
         removeOnFinish: true,
         onTick: () {
-          if (_currentHealth > 0) {
-            _updatePlayerState();
-          }
+          current = PlayerState.idle;
         },
       );
-      add(damageTimer);
+      add(_hurtAnimationTimer!);
+
+      // Timer d'invulnérabilité (plus long)
+      _invulnerabilityTimer = TimerComponent(
+        period: 1.5,
+        removeOnFinish: true,
+        onTick: () {
+          _isInvulnerable = false;
+        },
+      );
+      add(_invulnerabilityTimer!);
     }
   }
 
+  // CORRECTION COMPLÈTE: Mort du joueur
   void _die() {
-    // ✅ CORRECTION: Vérifier que la santé est bien à 0
-    if (_currentHealth > 0) return;
+    if (_currentHealth > 0) {
+      return;
+    }
 
-    print('💀 Joueur mort!');
-    current = PlayerState.hurt;
-
-    // ✅ CORRECTION: Arrêter le mouvement
+    print('💀 Joueur mort! Animation de mort déclenchée');
+    current = PlayerState.dead;
     _velocityX = 0.0;
     _isAttacking = false;
+    _isInvulnerable = true;
 
-    // Appeler le game over
-    Future.delayed(Duration(milliseconds: 100), () {
+    // Arrêter tous les timers
+    _attackCooldownTimer?.removeFromParent();
+    _invulnerabilityTimer?.removeFromParent();
+    _hurtAnimationTimer?.removeFromParent();
+
+    // Jouer l'animation de mort complètement avant game over
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      print('🎮 Game Over déclenché après animation de mort');
       gameRef.onGameOver?.call();
     });
   }
@@ -357,23 +385,19 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef<
   void heal(double amount) {
     _currentHealth += amount;
     _currentHealth = _currentHealth.clamp(0, _maxHealth);
-    print('❤️ Soin reçu: +$amount, PV: $_currentHealth/$_maxHealth');
   }
 
   void increaseMaxHealth(double amount) {
     _maxHealth += amount;
     _currentHealth += amount;
-    print('❤️ Santé maximale augmentée: $_maxHealth');
   }
 
   void upgradeSwordDamage(double increase) {
     _swordDamage += increase;
-    print('⚔️ Dégâts épée améliorés: $_swordDamage');
   }
 
   void upgradeFlameDamage(double increase) {
     _flameDamage += increase;
-    print('🔥 Dégâts flamme améliorés: $_flameDamage');
   }
 
   // Getters pour les statistiques
@@ -384,23 +408,28 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef<
   double get healthPercentage => _currentHealth / _maxHealth;
   int get coins => _gameManager.playerStats.coins;
 
-  // ✅ CORRECTION: Méthode pour reset la santé
   void resetHealth() {
     _currentHealth = _maxHealth;
     current = PlayerState.idle;
     _velocityX = 0.0;
     _isAttacking = false;
-    print('❤️ Santé du joueur réinitialisée: $_currentHealth/$_maxHealth');
+    _isInvulnerable = false;
+
+    // Nettoyer les timers
+    _attackCooldownTimer?.removeFromParent();
+    _invulnerabilityTimer?.removeFromParent();
+    _hurtAnimationTimer?.removeFromParent();
   }
 
   @override
   void onRemove() {
     _attackCooldownTimer?.removeFromParent();
+    _invulnerabilityTimer?.removeFromParent();
+    _hurtAnimationTimer?.removeFromParent();
     super.onRemove();
   }
 }
 
-// Composant pour la barre de santé
 class HealthBar extends PositionComponent {
   final Player player;
   final double width = 80.0;
@@ -415,14 +444,12 @@ class HealthBar extends PositionComponent {
   void render(Canvas canvas) {
     super.render(canvas);
 
-    // Barre de fond (noire)
     final backgroundRect = Rect.fromLTWH(-width / 2, -height / 2, width, height);
     canvas.drawRect(
       backgroundRect,
       Paint()..color = Colors.black.withOpacity(0.8),
     );
 
-    // Barre de santé (verte/rouge selon les PV)
     final healthWidth = width * player.healthPercentage;
     final healthColor = player.healthPercentage > 0.5
         ? Colors.green
@@ -436,7 +463,6 @@ class HealthBar extends PositionComponent {
       Paint()..color = healthColor,
     );
 
-    // Bordure
     final borderRect = Rect.fromLTWH(-width / 2, -height / 2, width, height);
     canvas.drawRect(
       borderRect,

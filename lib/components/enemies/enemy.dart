@@ -2,11 +2,12 @@
 import 'package:flame/components.dart';
 import 'package:flame/sprite.dart';
 import 'package:flutter/material.dart';
+import '../../game/eco_warrior_game.dart';
 
 enum EnemyState { idle, moving, attacking, hurt, dying }
 
 abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
-    with HasGameRef {
+    with HasGameRef<EcoWarriorGame> {
 
   // Propriétés de base
   double health = 100.0;
@@ -18,6 +19,7 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
 
   bool isActive = true;
   bool isFacingRight = false;
+  bool isAttacking = false;
 
   // Référence au joueur
   Vector2? playerPosition;
@@ -36,6 +38,9 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
   TimerComponent? _attackTimer;
   bool _canAttack = true;
 
+  // Durée d'animation d'attaque
+  double _attackAnimationDuration = 0.6;
+
   Enemy({
     required Vector2 position,
     required Vector2 size,
@@ -47,10 +52,8 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // Charger les animations spécifiques à l'ennemi
     await loadAnimations();
 
-    // Définir les animations
     animations = {
       EnemyState.idle: idleAnimation,
       EnemyState.moving: moveAnimation,
@@ -61,18 +64,20 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
 
     current = EnemyState.idle;
 
-    // ✅ CORRECTION: Position de la barre de santé ajustée (plus bas)
     _healthBar = HealthBar(
       enemy: this,
-      position: Vector2(0, -size.y - 5), // Plus proche du monstre
+      position: Vector2(0, -size.y - 5),
     );
     await add(_healthBar);
 
     print('✅ ${runtimeType} chargé à la position: $position');
   }
 
-  // Méthodes à implémenter par les classes enfants
   Future<void> loadAnimations();
+
+  void setAttackAnimationDuration(double duration) {
+    _attackAnimationDuration = duration;
+  }
 
   @override
   void update(double dt) {
@@ -80,9 +85,13 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
 
     if (!isActive) return;
 
-    // IA pour attaquer le joueur
+    if (isAttacking) return;
+
     _updateAI(dt);
-    _updateState();
+
+    if (current != EnemyState.attacking && current != EnemyState.hurt && current != EnemyState.dying) {
+      _updateFacingDirection();
+    }
   }
 
   void _updateAI(double dt) {
@@ -91,42 +100,49 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
     final distanceToPlayer = (playerPosition! - position).length;
 
     if (distanceToPlayer <= attackRange && _canAttack) {
-      // Attaquer le joueur
-      current = EnemyState.attacking;
-      _attackPlayer();
-    } else if (distanceToPlayer <= detectionRange) {
-      // Se déplacer vers le joueur
+      startAttack();
+    } else if (distanceToPlayer <= detectionRange && !isAttacking) {
       current = EnemyState.moving;
       _moveTowardsPlayer(dt);
-    } else {
-      // Rester en idle
+    } else if (!isAttacking) {
       current = EnemyState.idle;
     }
   }
 
-  void _moveTowardsPlayer(double dt) {
-    if (playerPosition == null) return;
+  // MÉTHODE PUBLIQUE pour démarrer l'attaque
+  void startAttack() {
+    if (!_canAttack || isAttacking) return;
 
-    final direction = (playerPosition! - position).normalized();
-    position += direction * moveSpeed * dt;
+    isAttacking = true;
+    _canAttack = false;
+    current = EnemyState.attacking;
 
-    // Gestion de la direction
-    if (direction.x != 0) {
-      final newDirection = direction.x > 0;
-      if (newDirection != isFacingRight) {
-        isFacingRight = newDirection;
-        flipHorizontallyAroundCenter();
+    print('⚔️ ${runtimeType} commence l\'attaque!');
+
+    _attackTimer = TimerComponent(
+      period: _attackAnimationDuration,
+      removeOnFinish: true,
+      onTick: () {
+        _finishAttack();
+      },
+    );
+    add(_attackTimer!);
+
+    // Infliger des dégâts au milieu de l'animation
+    Future.delayed(Duration(milliseconds: (_attackAnimationDuration * 500).toInt()), () {
+      if (isActive && isAttacking && playerPosition != null) {
+        final distance = (playerPosition! - position).length;
+        if (distance <= attackRange) {
+          gameRef.player.takeDamage(damage);
+          print('💥 ${runtimeType} inflige $damage dégâts!');
+        }
       }
-    }
+    });
   }
 
-  void _attackPlayer() {
-    if (!_canAttack) return;
+  void _finishAttack() {
+    isAttacking = false;
 
-    _canAttack = false;
-    print('⚔️ ${runtimeType} attaque le joueur!');
-
-    // Cooldown d'attaque
     _attackTimer = TimerComponent(
       period: 1.5,
       removeOnFinish: true,
@@ -135,19 +151,47 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
       },
     );
     add(_attackTimer!);
+
+    print('✅ ${runtimeType} fin de l\'attaque');
   }
 
-  void _updateState() {
-    // Mise à jour automatique de l'état par l'IA
+  void _moveTowardsPlayer(double dt) {
+    if (playerPosition == null) return;
+
+    final directionX = playerPosition!.x - position.x;
+    final horizontalDirection = directionX.sign;
+
+    position.x += horizontalDirection * moveSpeed * dt;
+  }
+
+  void _updateFacingDirection() {
+    if (playerPosition == null) return;
+
+    final directionX = playerPosition!.x - position.x;
+    if (directionX.abs() > 5) {
+      final newDirection = directionX > 0;
+      if (newDirection != isFacingRight) {
+        isFacingRight = newDirection;
+        flipEnemy();
+        print('🔄 ${runtimeType} - Nouvelle direction: ${isFacingRight ? "DROITE" : "GAUCHE"}');
+      }
+    }
+  }
+
+  void flipEnemy() {
+    if (isFacingRight) {
+      scale = Vector2(1, 1);
+    } else {
+      scale = Vector2(-1, 1);
+    }
   }
 
   void updatePlayerPosition(Vector2 newPosition) {
     playerPosition = newPosition;
   }
 
-  // Méthode pour prendre des dégâts
   void takeDamage(double damage) {
-    if (!isActive) return;
+    if (!isActive || isAttacking) return;
 
     health -= damage;
     current = EnemyState.hurt;
@@ -157,7 +201,6 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
     if (health <= 0) {
       _die();
     } else {
-      // Retour à l'état normal après un moment
       Future.delayed(Duration(milliseconds: 500), () {
         if (isActive && health > 0) {
           current = EnemyState.idle;
@@ -172,7 +215,6 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
 
     print('💀 ${runtimeType} vaincu!');
 
-    // Supprimer après l'animation de mort
     Future.delayed(Duration(milliseconds: 1000), () {
       removeFromParent();
     });
@@ -188,7 +230,6 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
   }
 }
 
-// Barre de santé pour les ennemis
 class HealthBar extends PositionComponent {
   final Enemy enemy;
   final double width = 60.0;
@@ -203,14 +244,12 @@ class HealthBar extends PositionComponent {
   void render(Canvas canvas) {
     super.render(canvas);
 
-    // Barre de fond (noire)
     final backgroundRect = Rect.fromLTWH(-width / 2, -height / 2, width, height);
     canvas.drawRect(
       backgroundRect,
       Paint()..color = Colors.black.withOpacity(0.8),
     );
 
-    // Barre de santé (verte/rouge selon les PV)
     final healthWidth = width * enemy.healthPercentage;
     final healthColor = enemy.healthPercentage > 0.5
         ? Colors.green
@@ -224,7 +263,6 @@ class HealthBar extends PositionComponent {
       Paint()..color = healthColor,
     );
 
-    // Bordure
     final borderRect = Rect.fromLTWH(-width / 2, -height / 2, width, height);
     canvas.drawRect(
       borderRect,
@@ -238,7 +276,6 @@ class HealthBar extends PositionComponent {
   @override
   void update(double dt) {
     super.update(dt);
-    // ✅ CORRECTION: Position ajustée (plus bas)
     position = Vector2(0, -enemy.size.y - 5);
   }
 }

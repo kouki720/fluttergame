@@ -1,7 +1,6 @@
 // components/enemies/toxic_slime.dart
 import 'package:flame/components.dart';
 import 'package:flame/sprite.dart';
-import 'package:flutter/material.dart';
 import 'enemy.dart';
 
 class ToxicSlime extends Enemy {
@@ -20,21 +19,9 @@ class ToxicSlime extends Enemy {
   }
 
   @override
-  Future<void> onLoad() async {
-    await super.onLoad();
-  }
-
-  @override
   Future<void> loadAnimations() async {
     try {
-      // ✅ CORRECTION: Charger TOUTES les animations séparément
       final idleImage = await gameRef.images.load('enemies/toxic_slime/idle.png');
-      final moveImage = await gameRef.images.load('enemies/toxic_slime/move.png');
-      final attackImage = await gameRef.images.load('enemies/toxic_slime/attack.png');
-      final hurtImage = await gameRef.images.load('enemies/toxic_slime/hurt.png');
-      final dieImage = await gameRef.images.load('enemies/toxic_slime/die.png');
-
-      // Animation Idle
       idleAnimation = SpriteAnimation.fromFrameData(
         idleImage,
         SpriteAnimationData.sequenced(
@@ -44,7 +31,7 @@ class ToxicSlime extends Enemy {
         ),
       );
 
-      // Animation Déplacement
+      final moveImage = await gameRef.images.load('enemies/toxic_slime/move.png');
       moveAnimation = SpriteAnimation.fromFrameData(
         moveImage,
         SpriteAnimationData.sequenced(
@@ -54,7 +41,7 @@ class ToxicSlime extends Enemy {
         ),
       );
 
-      // Animation Attaque
+      final attackImage = await gameRef.images.load('enemies/toxic_slime/attack.png');
       attackAnimation = SpriteAnimation.fromFrameData(
         attackImage,
         SpriteAnimationData.sequenced(
@@ -64,7 +51,9 @@ class ToxicSlime extends Enemy {
         ),
       );
 
-      // Animation Blessé
+      setAttackAnimationDuration(0.2 * 3);
+
+      final hurtImage = await gameRef.images.load('enemies/toxic_slime/hurt.png');
       hurtAnimation = SpriteAnimation.fromFrameData(
         hurtImage,
         SpriteAnimationData.sequenced(
@@ -74,7 +63,7 @@ class ToxicSlime extends Enemy {
         ),
       );
 
-      // Animation Mort
+      final dieImage = await gameRef.images.load('enemies/toxic_slime/die.png');
       dyingAnimation = SpriteAnimation.fromFrameData(
         dieImage,
         SpriteAnimationData.sequenced(
@@ -84,10 +73,10 @@ class ToxicSlime extends Enemy {
         ),
       );
 
-      print('✅ Toutes les animations ToxicSlime chargées');
+      print('✅ ToxicSlime animations chargées');
 
     } catch (e) {
-      print('❌ Erreur chargement animations ToxicSlime: $e');
+      print('❌ Erreur animations ToxicSlime: $e');
       await _createFallbackAnimations();
     }
   }
@@ -97,16 +86,15 @@ class ToxicSlime extends Enemy {
       final spriteSheet = await gameRef.images.load('player/idle.png');
       final fallbackSprite = Sprite(spriteSheet);
 
-      // Fallback: utiliser la même animation pour tout
       idleAnimation = SpriteAnimation.spriteList([fallbackSprite], stepTime: 0.4);
       moveAnimation = SpriteAnimation.spriteList([fallbackSprite], stepTime: 0.4);
       attackAnimation = SpriteAnimation.spriteList([fallbackSprite], stepTime: 0.4);
       hurtAnimation = SpriteAnimation.spriteList([fallbackSprite], stepTime: 0.4);
       dyingAnimation = SpriteAnimation.spriteList([fallbackSprite], stepTime: 0.4);
 
-      print('🔄 Fallback animations créées pour ToxicSlime');
+      setAttackAnimationDuration(0.6);
     } catch (e) {
-      print('❌ Erreur création fallback animations: $e');
+      print('❌ Erreur fallback: $e');
     }
   }
 }
