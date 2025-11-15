@@ -5,10 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:eco_warrior_tunisia1/managers/audio_manager.dart';
 import 'package:eco_warrior_tunisia1/managers/game_manager.dart';
 import '../attacks/flame_attack.dart';
+import '../../game/eco_warrior_game.dart';
 
 enum PlayerState { idle, running, jumping, attacking, hurt }
 
-class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef {
+class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef<EcoWarriorGame> {
   // État et propriétés du joueur
   bool isFacingRight = true;
   double moveSpeed = 200.0;
@@ -43,16 +44,18 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
   // Composant de la barre de santé
   late final HealthBar _healthBar;
 
-  // ✅ CORRECTION: Taille augmentée encore (192x192)
   Player({Vector2? position}) : super(
       position: position ?? Vector2(100, 300),
-      size: Vector2(192, 192) // ✅ Taille augmentée à 192x192
+      size: Vector2(192, 192)
   );
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
     anchor = Anchor.bottomCenter;
+
+    // ✅ CORRECTION: Réinitialiser la santé à 100
+    _currentHealth = 100.0;
 
     // Charger toutes les animations
     await _loadAnimations();
@@ -68,16 +71,14 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
 
     current = PlayerState.idle;
 
-    // ✅ CORRECTION: Position de la barre de santé ajustée - PLUS BASSE
+    // Barre de santé
     _healthBar = HealthBar(
       player: this,
-      position: Vector2(0, -size.y / 3), // ✅ Beaucoup plus bas
+      position: Vector2(0, -size.y / 3),
     );
     await add(_healthBar);
 
-    print('🎮 Joueur initialisé à la position: $position, taille: $size');
-    print('❤️ Santé: $_currentHealth/$_maxHealth');
-    print('⚔️ Dégâts épée: $_swordDamage, 🔥 Dégâts flamme: $_flameDamage');
+    print('🎮 Joueur initialisé - Santé: $_currentHealth/$_maxHealth');
   }
 
   Future<void> _loadAnimations() async {
@@ -92,7 +93,6 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
           stepTime: 0.2,
         ),
       );
-      print('✅ Animation idle chargée');
 
       // Animation Course
       final runImage = await gameRef.images.load('player/run.png');
@@ -104,7 +104,6 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
           stepTime: 0.1,
         ),
       );
-      print('✅ Animation run chargée');
 
       // Animation Saut
       final jumpImage = await gameRef.images.load('player/jump.png');
@@ -116,7 +115,6 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
           stepTime: 0.20,
         ),
       );
-      print('✅ Animation jump chargée');
 
       // Animation Attaque
       final attackImage = await gameRef.images.load('player/attack.png');
@@ -128,7 +126,6 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
           stepTime: 0.1,
         ),
       );
-      print('✅ Animation attack chargée');
 
       // Animation Dégâts
       final hurtImage = await gameRef.images.load('player/hurt.png');
@@ -140,7 +137,8 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
           stepTime: 0.1,
         ),
       );
-      print('✅ Animation hurt chargée');
+
+      print('✅ Toutes les animations joueur chargées');
 
     } catch (e) {
       print('❌ Erreur chargement animations joueur: $e');
@@ -184,7 +182,7 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
     // Limites de l'écran
     _checkScreenBounds();
 
-    // ✅ CORRECTION: Mettre à jour la position avec la nouvelle valeur
+    // Mettre à jour la position de la barre de santé
     _healthBar.position = Vector2(0, -size.y / 3);
   }
 
@@ -197,8 +195,8 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
   }
 
   void _checkGroundCollision() {
-    // ✅ CORRECTION: Ajusté pour la nouvelle taille
-    final groundLevel = gameRef.size.y - 0; // Sol à 250 pixels du bas
+    // Position originale
+    final groundLevel = gameRef.size.y - 0;
 
     if (position.y >= groundLevel) {
       position.y = groundLevel;
@@ -239,7 +237,7 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
     current = PlayerState.jumping;
     AudioManager().playJumpSfx();
 
-    print('🦘 Joueur saute! Force: $_jumpForce, Position: $position');
+    print('🦘 Joueur saute!');
   }
 
   void swordAttack() {
@@ -249,7 +247,7 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
     current = PlayerState.attacking;
     AudioManager().playSwordAttackSfx();
 
-    print('⚔️ Attaque épée! Dégâts: $_swordDamage, Position: $position');
+    print('⚔️ Attaque épée! Dégâts: $_swordDamage');
 
     // Appliquer les dégâts de l'épée aux ennemis proches
     _applySwordDamage();
@@ -271,12 +269,10 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
     _isAttacking = true;
     AudioManager().playFlameAttackSfx();
 
-    print('🎯 Début attaque flamme... Dégâts: $_flameDamage, Position: $position, Direction: ${isFacingRight ? "droite" : "gauche"}');
+    print('🔥 Attaque flamme! Dégâts: $_flameDamage');
 
     // Créer la flamme rouge avec les dégâts
     _spawnFlameAttack();
-
-    print('🔥 Attaque flamme lancée!');
 
     _attackCooldownTimer = TimerComponent(
       period: 0.8,
@@ -290,72 +286,72 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
   }
 
   void _spawnFlameAttack() {
-    // ✅ CORRECTION: Position ajustée pour la nouvelle taille (192x192)
     final flamePosition = Vector2(
       position.x + (isFacingRight ? size.x / 2.5 : -size.x / 2.5),
-      position.y - size.y / 3, // Au niveau du torse du joueur
+      position.y - size.y / 3,
     );
 
     final flame = FlameAttack(
       position: flamePosition,
       direction: isFacingRight ? 1 : -1,
-      // ✅ CORRECTION: Retirer le paramètre damage qui n'existe pas
     );
 
     gameRef.add(flame);
-    print('🔥 Flamme créée à: $flamePosition, Dégâts: $_flameDamage, Direction: ${isFacingRight ? "droite" : "gauche"}');
+    print('🔥 Flamme créée');
   }
 
   void _applySwordDamage() {
-    // TODO: Implémenter la détection des ennemis proches pour l'attaque à l'épée
-    // Pour l'instant, on loggue seulement l'action
     print('⚔️ Application des dégâts d\'épée: $_swordDamage');
 
-    // Exemple de détection d'ennemis dans une zone
-    final attackRange = isFacingRight ?
-    Vector2(position.x + size.x / 2, position.y - size.y / 2) :
-    Vector2(position.x - size.x / 2, position.y - size.y / 2);
-
-    print('🎯 Zone d\'attaque épée: $attackRange');
+    // Appeler l'EnemyManager pour appliquer les dégâts
+    gameRef.enemyManager.playerAttacksEnemies(
+      position,
+      100.0,
+      _swordDamage,
+    );
   }
 
   void takeDamage(double damage) {
+    // ✅ CORRECTION: Éviter les dégâts multiples si déjà mort
+    if (_currentHealth <= 0) return;
+
     _currentHealth -= damage;
     _currentHealth = _currentHealth.clamp(0, _maxHealth);
     current = PlayerState.hurt;
 
     print('💥 Joueur touché! Dégâts: $damage, PV: $_currentHealth/$_maxHealth');
 
-    // Effet visuel de dégâts
-    _showDamageEffect(damage);
-
-    // Vérifier si le joueur est mort
     if (_currentHealth <= 0) {
       _die();
+    } else {
+      final damageTimer = TimerComponent(
+        period: 0.5,
+        removeOnFinish: true,
+        onTick: () {
+          if (_currentHealth > 0) {
+            _updatePlayerState();
+          }
+        },
+      );
+      add(damageTimer);
     }
-
-    final damageTimer = TimerComponent(
-      period: 0.5,
-      removeOnFinish: true,
-      onTick: () {
-        if (_currentHealth > 0) {
-          _updatePlayerState();
-        }
-      },
-    );
-    add(damageTimer);
-  }
-
-  void _showDamageEffect(double damage) {
-    // TODO: Ajouter un effet visuel pour les dégâts reçus
-    // Par exemple, faire clignoter le joueur en rouge
-    print('💢 Effet de dégâts: $damage points');
   }
 
   void _die() {
+    // ✅ CORRECTION: Vérifier que la santé est bien à 0
+    if (_currentHealth > 0) return;
+
     print('💀 Joueur mort!');
     current = PlayerState.hurt;
-    // TODO: Implémenter la logique de mort (game over, etc.)
+
+    // ✅ CORRECTION: Arrêter le mouvement
+    _velocityX = 0.0;
+    _isAttacking = false;
+
+    // Appeler le game over
+    Future.delayed(Duration(milliseconds: 100), () {
+      gameRef.onGameOver?.call();
+    });
   }
 
   void heal(double amount) {
@@ -367,7 +363,7 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
   void increaseMaxHealth(double amount) {
     _maxHealth += amount;
     _currentHealth += amount;
-    print('❤️ Santé maximale augmentée: $_maxHealth, PV: $_currentHealth/$_maxHealth');
+    print('❤️ Santé maximale augmentée: $_maxHealth');
   }
 
   void upgradeSwordDamage(double increase) {
@@ -388,10 +384,18 @@ class Player extends SpriteAnimationGroupComponent<PlayerState> with HasGameRef 
   double get healthPercentage => _currentHealth / _maxHealth;
   int get coins => _gameManager.playerStats.coins;
 
+  // ✅ CORRECTION: Méthode pour reset la santé
+  void resetHealth() {
+    _currentHealth = _maxHealth;
+    current = PlayerState.idle;
+    _velocityX = 0.0;
+    _isAttacking = false;
+    print('❤️ Santé du joueur réinitialisée: $_currentHealth/$_maxHealth');
+  }
+
   @override
   void onRemove() {
     _attackCooldownTimer?.removeFromParent();
-    print('🗑️ Joueur démonté');
     super.onRemove();
   }
 }
@@ -441,30 +445,11 @@ class HealthBar extends PositionComponent {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.0,
     );
-
-    // Texte des PV (optionnel)
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: '${player.currentHealth.toInt()}/${player.maxHealth.toInt()}',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 8,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    );
-    textPainter.layout();
-    textPainter.paint(
-      canvas,
-      Offset(-textPainter.width / 2, -height - 12),
-    );
   }
 
   @override
   void update(double dt) {
     super.update(dt);
-    // ✅ CORRECTION: Suivre le joueur avec la nouvelle position
     position = Vector2(0, -player.size.y / 3);
   }
 }

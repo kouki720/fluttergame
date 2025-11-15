@@ -28,7 +28,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
   void _initializeGame() {
     game = EcoWarriorGame();
 
-    // Configuration des callbacks avec Flame 1.33.0
+    // Configuration des callbacks
     game.onTimeUpdate = _refreshUI;
     game.onGameOver = _showGameOverScreen;
     game.onScoreUpdate = _onScoreUpdate;
@@ -41,18 +41,28 @@ class _GameplayScreenState extends State<GameplayScreen> {
         .catchError((_) => AudioManager().playMusic('stage1_music.mp3'));
   }
 
-  void _refreshUI() => setState(() {});
+  void _refreshUI() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
 
   void _onScoreUpdate() {
-    setState(() {});
-    // Effet visuel pour le score (optionnel)
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _showGameOverScreen() {
     if (mounted) {
-      setState(() {
-        _showGameOver = true;
-        _isPaused = true;
+      // ✅ CORRECTION: Utiliser un délai pour éviter setState pendant le build
+      Future.delayed(Duration.zero, () {
+        if (mounted) {
+          setState(() {
+            _showGameOver = true;
+            _isPaused = true;
+          });
+        }
       });
     }
   }
@@ -65,7 +75,9 @@ class _GameplayScreenState extends State<GameplayScreen> {
 
   void _togglePause() {
     AudioManager().playSfx('button_click.mp3');
-    setState(() => _isPaused = !_isPaused);
+    if (mounted) {
+      setState(() => _isPaused = !_isPaused);
+    }
 
     _isPaused ? game.pauseGame() : game.resumeGame();
     _isPaused ? AudioManager().pauseMusic() : AudioManager().resumeMusic();
@@ -73,10 +85,12 @@ class _GameplayScreenState extends State<GameplayScreen> {
 
   void _restartGame() {
     AudioManager().playSfx('button_click.mp3');
-    setState(() {
-      _isPaused = false;
-      _showGameOver = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isPaused = false;
+        _showGameOver = false;
+      });
+    }
     game.resetGame();
     _playStageMusic();
   }
@@ -100,31 +114,6 @@ class _GameplayScreenState extends State<GameplayScreen> {
               'hudOverlay': _buildHUDOverlay,
               'gameOverOverlay': _buildGameOverOverlay,
             },
-            loadingBuilder: (context) => Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: Colors.green),
-                  SizedBox(height: 20),
-                  Text('Chargement du niveau...', style: TextStyle(color: Colors.white)),
-                ],
-              ),
-            ),
-            errorBuilder: (context, error) => Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error, color: Colors.red, size: 50),
-                  SizedBox(height: 20),
-                  Text('Erreur de chargement', style: TextStyle(color: Colors.white)),
-                  SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: _initializeGame,
-                    child: Text('Réessayer'),
-                  ),
-                ],
-              ),
-            ),
           ),
 
           // Boutons UI
@@ -202,19 +191,6 @@ class _GameplayScreenState extends State<GameplayScreen> {
             ],
           ),
           const Spacer(),
-
-          // Indicateur de stage
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.6),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              'Stage ${widget.stage.stageNumber}: ${widget.stage.title}',
-              style: TextStyle(color: Colors.white, fontSize: 14),
-            ),
-          ),
         ],
       ),
     );
@@ -269,7 +245,6 @@ class _GameplayScreenState extends State<GameplayScreen> {
   }
 }
 
-// Composants réutilisables
 class _HUDItem extends StatelessWidget {
   final IconData icon;
   final String value;

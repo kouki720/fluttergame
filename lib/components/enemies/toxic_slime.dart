@@ -9,24 +9,32 @@ class ToxicSlime extends Enemy {
   ToxicSlime({required Vector2 position})
       : super(
     position: position,
-    size: Vector2(180, 128),
+    size: Vector2(144, 144),
   ) {
     health = 60.0;
     maxHealth = 60.0;
+    damage = 10.0;
+    moveSpeed = 60.0;
+    attackRange = 70.0;
+    detectionRange = 200.0;
   }
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    print('🔍 ToxicSlime - Position: $position, Size: $size, Anchor: $anchor');
   }
 
   @override
   Future<void> loadAnimations() async {
     try {
+      // ✅ CORRECTION: Charger TOUTES les animations séparément
       final idleImage = await gameRef.images.load('enemies/toxic_slime/idle.png');
+      final moveImage = await gameRef.images.load('enemies/toxic_slime/move.png');
+      final attackImage = await gameRef.images.load('enemies/toxic_slime/attack.png');
+      final hurtImage = await gameRef.images.load('enemies/toxic_slime/hurt.png');
+      final dieImage = await gameRef.images.load('enemies/toxic_slime/die.png');
 
-      // ✅ SEULEMENT idleAnimation
+      // Animation Idle
       idleAnimation = SpriteAnimation.fromFrameData(
         idleImage,
         SpriteAnimationData.sequenced(
@@ -36,89 +44,69 @@ class ToxicSlime extends Enemy {
         ),
       );
 
-      print('✅ Animation ToxicSlime chargée - 3 frames, stepTime: 0.4s');
+      // Animation Déplacement
+      moveAnimation = SpriteAnimation.fromFrameData(
+        moveImage,
+        SpriteAnimationData.sequenced(
+          amount: 3,
+          textureSize: Vector2(90, 64),
+          stepTime: 0.3,
+        ),
+      );
+
+      // Animation Attaque
+      attackAnimation = SpriteAnimation.fromFrameData(
+        attackImage,
+        SpriteAnimationData.sequenced(
+          amount: 3,
+          textureSize: Vector2(90, 64),
+          stepTime: 0.2,
+        ),
+      );
+
+      // Animation Blessé
+      hurtAnimation = SpriteAnimation.fromFrameData(
+        hurtImage,
+        SpriteAnimationData.sequenced(
+          amount: 2,
+          textureSize: Vector2(90, 64),
+          stepTime: 0.1,
+        ),
+      );
+
+      // Animation Mort
+      dyingAnimation = SpriteAnimation.fromFrameData(
+        dieImage,
+        SpriteAnimationData.sequenced(
+          amount: 3,
+          textureSize: Vector2(90, 64),
+          stepTime: 0.25,
+        ),
+      );
+
+      print('✅ Toutes les animations ToxicSlime chargées');
 
     } catch (e) {
-      print('❌ Erreur chargement animation ToxicSlime: $e');
-      await _createFallbackAnimation();
+      print('❌ Erreur chargement animations ToxicSlime: $e');
+      await _createFallbackAnimations();
     }
   }
 
-  Future<void> _createFallbackAnimation() async {
+  Future<void> _createFallbackAnimations() async {
     try {
       final spriteSheet = await gameRef.images.load('player/idle.png');
       final fallbackSprite = Sprite(spriteSheet);
 
-      // ✅ SEULEMENT idleAnimation
+      // Fallback: utiliser la même animation pour tout
       idleAnimation = SpriteAnimation.spriteList([fallbackSprite], stepTime: 0.4);
+      moveAnimation = SpriteAnimation.spriteList([fallbackSprite], stepTime: 0.4);
+      attackAnimation = SpriteAnimation.spriteList([fallbackSprite], stepTime: 0.4);
+      hurtAnimation = SpriteAnimation.spriteList([fallbackSprite], stepTime: 0.4);
+      dyingAnimation = SpriteAnimation.spriteList([fallbackSprite], stepTime: 0.4);
 
-      print('🔄 Fallback animation créée pour ToxicSlime');
+      print('🔄 Fallback animations créées pour ToxicSlime');
     } catch (e) {
-      print('❌ Erreur création fallback animation: $e');
-      _createBasicAnimation();
-    }
-  }
-
-  void _createBasicAnimation() {
-    try {
-      gameRef.images.load('player/idle.png').then((image) {
-        final sprite = Sprite(image);
-
-        // ✅ SEULEMENT idleAnimation
-        idleAnimation = SpriteAnimation.spriteList([sprite], stepTime: 1.0);
-
-        print('🆘 Animation basique créée pour ToxicSlime');
-      });
-    } catch (e) {
-      print('💀 Erreur création animation basique: $e');
-      _createEmptyAnimation();
-    }
-  }
-
-  void _createEmptyAnimation() {
-    try {
-      Future.delayed(Duration(milliseconds: 500), () async {
-        try {
-          final image = await gameRef.images.load('player/idle.png');
-          final sprite = Sprite(image);
-
-          // ✅ SEULEMENT idleAnimation
-          idleAnimation = SpriteAnimation.spriteList([sprite], stepTime: 1.0);
-        } catch (e) {
-          print('⚠️ Impossible de créer l\'animation même après délai');
-        }
-      });
-
-      gameRef.images.load('player/idle.png').then((tempImage) {
-        final tempSprite = Sprite(tempImage);
-
-        // ✅ SEULEMENT idleAnimation
-        idleAnimation = SpriteAnimation.spriteList([tempSprite], stepTime: 1.0);
-
-        print('⚪ Animation temporaire créée pour ToxicSlime');
-      }).catchError((e) {
-        print('💥 Erreur lors du chargement de l\'image temporaire: $e');
-        _createUltimateFallback();
-      });
-
-    } catch (e) {
-      print('💥 ERREUR CRITIQUE dans _createEmptyAnimation: $e');
-      _createUltimateFallback();
-    }
-  }
-
-  void _createUltimateFallback() {
-    try {
-      gameRef.images.load('player/idle.png').then((image) {
-        final sprite = Sprite(image);
-
-        // ✅ SEULEMENT idleAnimation
-        idleAnimation = SpriteAnimation.spriteList([sprite], stepTime: 1.0);
-
-        print('🆘 Fallback ultime utilisé pour ToxicSlime');
-      });
-    } catch (e) {
-      print('💀 Impossible de créer aucune animation');
+      print('❌ Erreur création fallback animations: $e');
     }
   }
 }
