@@ -25,7 +25,7 @@ class PlasticMonster extends Enemy {
       idleAnimation = SpriteAnimation.fromFrameData(
         idleImage,
         SpriteAnimationData.sequenced(
-          amount: 4,
+          amount: 6,
           textureSize: Vector2(90, 64),
           stepTime: 0.3,
         ),
@@ -45,7 +45,7 @@ class PlasticMonster extends Enemy {
       attackAnimation = SpriteAnimation.fromFrameData(
         attackImage,
         SpriteAnimationData.sequenced(
-          amount: 4,
+          amount: 9,
           textureSize: Vector2(90, 64),
           stepTime: 0.15,
         ),
@@ -57,7 +57,7 @@ class PlasticMonster extends Enemy {
       hurtAnimation = SpriteAnimation.fromFrameData(
         hurtImage,
         SpriteAnimationData.sequenced(
-          amount: 2,
+          amount: 6,
           textureSize: Vector2(90, 64),
           stepTime: 0.1,
         ),

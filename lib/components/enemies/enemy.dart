@@ -21,7 +21,6 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
   bool isFacingRight = false;
   bool isAttacking = false;
 
-  // Référence au joueur
   Vector2? playerPosition;
 
   // Animations
@@ -38,7 +37,6 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
   TimerComponent? _attackTimer;
   bool _canAttack = true;
 
-  // Durée d'animation d'attaque
   double _attackAnimationDuration = 0.6;
 
   Enemy({
@@ -51,7 +49,6 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-
     await loadAnimations();
 
     animations = {
@@ -69,8 +66,6 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
       position: Vector2(0, -size.y - 5),
     );
     await add(_healthBar);
-
-    print('✅ ${runtimeType} chargé à la position: $position');
   }
 
   Future<void> loadAnimations();
@@ -84,7 +79,6 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
     super.update(dt);
 
     if (!isActive) return;
-
     if (isAttacking) return;
 
     _updateAI(dt);
@@ -99,9 +93,11 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
 
     final distanceToPlayer = (playerPosition! - position).length;
 
+    // ✅ CORRECTION: L'ennemi attaque ou se déplace vers le joueur dès qu'il est détecté
     if (distanceToPlayer <= attackRange && _canAttack) {
       startAttack();
     } else if (distanceToPlayer <= detectionRange && !isAttacking) {
+      // ✅ CORRECTION: Se déplacer vers le joueur dès la détection
       current = EnemyState.moving;
       _moveTowardsPlayer(dt);
     } else if (!isAttacking) {
@@ -109,7 +105,6 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
     }
   }
 
-  // MÉTHODE PUBLIQUE pour démarrer l'attaque
   void startAttack() {
     if (!_canAttack || isAttacking) return;
 
@@ -117,7 +112,7 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
     _canAttack = false;
     current = EnemyState.attacking;
 
-    print('⚔️ ${runtimeType} commence l\'attaque!');
+    print('⚔️ ${runtimeType} attaque le joueur!');
 
     _attackTimer = TimerComponent(
       period: _attackAnimationDuration,
@@ -130,11 +125,11 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
 
     // Infliger des dégâts au milieu de l'animation
     Future.delayed(Duration(milliseconds: (_attackAnimationDuration * 500).toInt()), () {
-      if (isActive && isAttacking && playerPosition != null) {
+      if (isActive && isAttacking && playerPosition != null && gameRef.isGameRunning) {
         final distance = (playerPosition! - position).length;
         if (distance <= attackRange) {
           gameRef.player.takeDamage(damage);
-          print('💥 ${runtimeType} inflige $damage dégâts!');
+          print('💥 ${runtimeType} inflige $damage dégâts au joueur!');
         }
       }
     });
@@ -151,8 +146,6 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
       },
     );
     add(_attackTimer!);
-
-    print('✅ ${runtimeType} fin de l\'attaque');
   }
 
   void _moveTowardsPlayer(double dt) {
@@ -161,7 +154,10 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
     final directionX = playerPosition!.x - position.x;
     final horizontalDirection = directionX.sign;
 
+    // ✅ CORRECTION: Déplacement normal vers le joueur
     position.x += horizontalDirection * moveSpeed * dt;
+
+    print('🎯 ${runtimeType} se déplace vers le joueur - Direction: $horizontalDirection');
   }
 
   void _updateFacingDirection() {
@@ -173,7 +169,7 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
       if (newDirection != isFacingRight) {
         isFacingRight = newDirection;
         flipEnemy();
-        print('🔄 ${runtimeType} - Nouvelle direction: ${isFacingRight ? "DROITE" : "GAUCHE"}');
+        print('🔄 ${runtimeType} change de direction: ${isFacingRight ? "DROITE" : "GAUCHE"}');
       }
     }
   }
@@ -191,7 +187,7 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
   }
 
   void takeDamage(double damage) {
-    if (!isActive || isAttacking) return;
+    if (!isActive || isAttacking || !gameRef.isGameRunning) return;
 
     health -= damage;
     current = EnemyState.hurt;
@@ -202,7 +198,7 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
       _die();
     } else {
       Future.delayed(Duration(milliseconds: 500), () {
-        if (isActive && health > 0) {
+        if (isActive && health > 0 && gameRef.isGameRunning) {
           current = EnemyState.idle;
         }
       });
@@ -230,6 +226,7 @@ abstract class Enemy extends SpriteAnimationGroupComponent<EnemyState>
   }
 }
 
+// Barre de santé pour les ennemis
 class HealthBar extends PositionComponent {
   final Enemy enemy;
   final double width = 60.0;
@@ -244,12 +241,14 @@ class HealthBar extends PositionComponent {
   void render(Canvas canvas) {
     super.render(canvas);
 
+    // Barre de fond (noire)
     final backgroundRect = Rect.fromLTWH(-width / 2, -height / 2, width, height);
     canvas.drawRect(
       backgroundRect,
       Paint()..color = Colors.black.withOpacity(0.8),
     );
 
+    // Barre de santé (verte/rouge selon les PV)
     final healthWidth = width * enemy.healthPercentage;
     final healthColor = enemy.healthPercentage > 0.5
         ? Colors.green
@@ -263,6 +262,7 @@ class HealthBar extends PositionComponent {
       Paint()..color = healthColor,
     );
 
+    // Bordure
     final borderRect = Rect.fromLTWH(-width / 2, -height / 2, width, height);
     canvas.drawRect(
       borderRect,

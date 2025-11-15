@@ -2,21 +2,27 @@
 import 'package:flame/components.dart';
 import 'package:flame/sprite.dart';
 import 'package:flutter/material.dart';
+import '../enemies/enemy.dart';
+import '../../game/eco_warrior_game.dart';
 
-class FlameAttack extends SpriteAnimationComponent with HasGameRef {
+class FlameAttack extends SpriteAnimationComponent
+    with HasGameRef<EcoWarriorGame> {
   final int direction; // 1 pour droite, -1 pour gauche
   final double speed = 400.0;
   final double lifeTime = 2.0;
+  final double damage = 25.0; // ✅ AJOUT: Dégâts de la flamme
+  final double attackRange = 50.0; // ✅ AJOUT: Portée d'attaque
 
   late final SpriteAnimation _animation;
   TimerComponent? _lifeTimer;
+  Set<Enemy> _hitEnemies = {}; // ✅ AJOUT: Éviter les dégâts multiples
 
   FlameAttack({
     required Vector2 position,
     required this.direction,
   }) : super(
       position: position,
-      size: Vector2(256, 128) // ✅ Taille augmentée 4 fois (64*4=256, 32*4=128)
+      size: Vector2(256, 128)
   );
 
   @override
@@ -50,12 +56,11 @@ class FlameAttack extends SpriteAnimationComponent with HasGameRef {
     );
     add(_lifeTimer!);
 
-    print('🔥 Flamme créée! Direction: $direction, Position: $position, Taille: $size');
+    print('🔥 Flamme créée! Direction: $direction, Position: $position, Taille: $size, Dégâts: $damage');
   }
 
   Future<void> _loadFlameAnimation() async {
     try {
-      // ✅ CORRECTION: Taille des sprites augmentée pour correspondre à la nouvelle taille
       final frames = <Sprite>[];
 
       for (int i = 1; i <= 6; i++) {
@@ -70,23 +75,23 @@ class FlameAttack extends SpriteAnimationComponent with HasGameRef {
         loop: true,
       );
 
-      print('✅ Animation flamme chargée avec ${frames.length} frames - Taille: $size');
+      print('✅ Animation flamme chargée avec ${frames.length} frames');
 
     } catch (e) {
       print('❌ Erreur chargement animation flamme: $e');
 
-      // Fallback: essayer l'ancienne méthode
+      // Fallback
       try {
         final flameImage = await gameRef.images.load('attacks/flame/flamerouge.png');
         _animation = SpriteAnimation.fromFrameData(
           flameImage,
           SpriteAnimationData.sequenced(
             amount: 4,
-            textureSize: Vector2(96, 48), // ✅ Taille augmentée pour le fallback aussi
+            textureSize: Vector2(96, 48),
             stepTime: 0.1,
           ),
         );
-        print('✅ Fallback: Animation spritesheet chargée avec taille augmentée');
+        print('✅ Fallback: Animation spritesheet chargée');
       } catch (e2) {
         print('❌ Fallback échoué: $e2');
         _animation = SpriteAnimation.spriteList([], stepTime: 0.1);
@@ -101,6 +106,9 @@ class FlameAttack extends SpriteAnimationComponent with HasGameRef {
     // Déplacement de la flamme
     position.x += direction * speed * dt;
 
+    // ✅ AJOUT: Vérifier les collisions avec les ennemis
+    _checkEnemyCollisions();
+
     // Vérification des bords
     if (position.x < -size.x || position.x > gameRef.size.x + size.x) {
       removeFromParent();
@@ -108,9 +116,32 @@ class FlameAttack extends SpriteAnimationComponent with HasGameRef {
     }
   }
 
+  // ✅ AJOUT: Méthode pour vérifier les collisions avec les ennemis
+  void _checkEnemyCollisions() {
+    for (final enemy in gameRef.enemyManager.activeEnemies) {
+      // Vérifier si l'ennemi est déjà touché par cette flamme
+      if (_hitEnemies.contains(enemy)) continue;
+
+      // Vérifier la distance entre la flamme et l'ennemi
+      final distance = (enemy.position - position).length;
+
+      if (distance <= attackRange && enemy.isAlive) {
+        // Infliger des dégâts à l'ennemi
+        enemy.takeDamage(damage);
+        _hitEnemies.add(enemy);
+
+        print('🔥 Flamme touche ${enemy.runtimeType}! Dégâts: $damage, PV restants: ${enemy.health}');
+
+        // Jouer un son d'impact
+        // AudioManager().playSfx('flame_hit.mp3');
+      }
+    }
+  }
+
   @override
   void onRemove() {
     _lifeTimer?.removeFromParent();
+    _hitEnemies.clear();
     print('🔥 Flamme détruite');
     super.onRemove();
   }
